@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WindTerm - 更快更好的 SSH/Telnet/Serial/Shell/Sftp 客户端</title>
+    <meta name="description" content="WindTerm 是一款专为 DevOps 打造的高性能终端工具，支持 SSH、Telnet、Serial、Shell、Sftp，完全免费，跨平台支持。">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        display: ['"Space Grotesk"', '"Noto Sans SC"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                        body: ['"Noto Sans SC"', '"Space Grotesk"', 'sans-serif'],
+                    },
+                    colors: {
+                        terminal: {
+                            bg: '#0a0e17',
+                            surface: '#111827',
+                            card: '#151d2e',
+                            border: '#1e293b',
+                            glow: '#00e5ff',
+                            accent: '#06d6a0',
+                            warm: '#fbbf24',
+                            text: '#e2e8f0',
+                            muted: '#64748b',
+                            dim: '#334155',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Noto Sans SC', 'Space Grotesk', sans-serif;
+            background: #0a0e17;
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0a0e17; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #00e5ff33; }
+
+        /* Animated grid background */
+        .grid-bg {
+            background-image:
+                linear-gradient(rgba(0, 229, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 229, 255, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+
+        /* Glow effects */
+        .glow-text {
+            text-shadow: 0 0 20px rgba(0, 229, 255, 0.3), 0 0 60px rgba(0, 229, 255, 0.1);
+        }
+
+        .glow-line {
+            background: linear-gradient(90deg, transparent, #00e5ff, transparent);
+            height: 1px;
+        }
+
+        .glow-line-v {
+            background: linear-gradient(180deg, transparent, #00e5ff33, transparent);
+            width: 1px;
+        }
+
+        /* Card hover */
+        .feature-card {
+            background: linear-gradient(135deg, #111827 0%, #151d2e 100%);
+            border: 1px solid #1e293b;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #00e5ff00, transparent);
+            transition: background 0.4s;
+        }
+        .feature-card:hover {
+            border-color: #00e5ff33;
+            transform: translateY(-4px);
+            box-shadow: 0 8px 40px rgba(0, 229, 255, 0.08);
+        }
+        .feature-card:hover::before {
+            background: linear-gradient(90deg, transparent, #00e5ff, transparent);
+        }
+
+        /* Performance bar animation */
+        .perf-bar {
+            transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 0;
+        }
+        .perf-bar.animate { width: var(--bar-width); }
+
+        /* Typing cursor */
+        .cursor-blink::after {
+            content: '▊';
+            animation: blink 1s step-end infinite;
+            color: #00e5ff;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* Fade in on scroll */
+        .fade-up {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .fade-up.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Staggered children */
+        .stagger > * { transition-delay: calc(var(--i, 0) * 0.1s); }
+
+        /* Hero particles */
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: #00e5ff;
+            border-radius: 50%;
+            opacity: 0;
+            animation: float-up 4s ease-in-out infinite;
+        }
+        @keyframes float-up {
+            0% { opacity: 0; transform: translateY(0) scale(0); }
+            20% { opacity: 0.6; }
+            100% { opacity: 0; transform: translateY(-200px) scale(1); }
+        }
+
+        /* Nav blur */
+        .nav-blur {
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+        }
+
+        /* Protocol tags */
+        .proto-tag {
+            border: 1px solid #1e293b;
+            transition: all 0.3s;
+        }
+        .proto-tag:hover {
+            border-color: #00e5ff;
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.15);
+            background: rgba(0, 229, 255, 0.05);
+        }
+
+        /* Table styles */
+        .bench-table {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        .bench-table th {
+            background: #151d2e;
+            border-bottom: 1px solid #00e5ff33;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+        }
+        .bench-table td {
+            border-bottom: 1px solid #1e293b;
+        }
+        .bench-table tr:hover td {
+            background: rgba(0, 229, 255, 0.03);
+        }
+        .bench-table .winner {
+            color: #06d6a0;
+            font-weight: 600;
+        }
+
+        /* Scanline overlay */
+        .scanlines::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 0, 0, 0.03) 2px,
+                rgba(0, 0, 0, 0.03) 4px
+            );
+            pointer-events: none;
+        }
+
+        /* Section indicator */
+        .section-indicator {
+            writing-mode: vertical-lr;
+            letter-spacing: 0.3em;
+            font-size: 0.65rem;
+            color: #334155;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Platform button */
+        .platform-btn {
+            background: linear-gradient(135deg, #151d2e, #111827);
+            border: 1px solid #1e293b;
+            transition: all 0.3s;
+        }
+        .platform-btn:hover {
+            border-color: #00e5ff;
+            box-shadow: 0 0 30px rgba(0, 229, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        /* Roadmap timeline */
+        .timeline-dot {
+            width: 12px; height: 12px;
+            border: 2px solid #00e5ff;
+            border-radius: 50%;
+            background: #0a0e17;
+            position: relative;
+            z-index: 2;
+        }
+        .timeline-dot.active {
+            background: #00e5ff;
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.5);
+        }
+    </style>
+</head>
+<body class="grid-bg">
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 nav-blur bg-terminal-bg/80 border-b border-terminal-border">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <a href="#" class="flex items-center gap-3 group">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-terminal-glow/20 to-terminal-accent/20 border border-terminal-glow/30 flex items-center justify-center group-hover:border-terminal-glow/60 transition-colors">
+                        <span class="font-mono text-terminal-glow text-sm font-bold">W</span>
+                    </div>
+                    <span class="font-display font-bold text-lg tracking-tight">Wind<span class="text-terminal-glow">Term</span></span>
+                </a>
+
+                <div class="hidden md:flex items-center gap-8 text-sm font-body">
+                    <a href="#features" class="text-terminal-muted hover:text-terminal-glow transition-colors">功能</a>
+                    <a href="#performance" class="text-terminal-muted hover:text-terminal-glow transition-colors">性能</a>
+                    <a href="#screenshots" class="text-terminal-muted hover:text-terminal-glow transition-colors">截图</a>
+                    <a href="#roadmap" class="text-terminal-muted hover:text-terminal-glow transition-colors">路线图</a>
+                    <a href="https://github.com/kingToolbox/WindTerm/releases" target="_blank" class="px-4 py-2 bg-terminal-glow/10 border border-terminal-glow/30 rounded-lg text-terminal-glow hover:bg-terminal-glow/20 transition-all font-display font-medium">
+                        <i class="fas fa-download mr-2 text-xs"></i>下载
+                    </a>
+                </div>
+
+                <button id="mobileMenuBtn" class="md:hidden text-terminal-muted hover:text-terminal-glow transition-colors">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+        <!-- Mobile Menu -->
+        <div id="mobileMenu" class="hidden md:hidden border-t border-terminal-border bg-terminal-bg/95 nav-blur">
+            <div class="px-4 py-4 flex flex-col gap-3 text-sm font-body">
+                <a href="#features" class="text-terminal-muted hover:text-terminal-glow py-2">功能</a>
+                <a href="#performance" class="text-terminal-muted hover:text-terminal-glow py-2">性能</a>
+                <a href="#screenshots" class="text-terminal-muted hover:text-terminal-glow py-2">截图</a>
+                <a href="#roadmap" class="text-terminal-muted hover:text-terminal-glow py-2">路线图</a>
+                <a href="https://github.com/kingToolbox/WindTerm/releases" target="_blank" class="px-4 py-2 bg-terminal-glow/10 border border-terminal-glow/30 rounded-lg text-terminal-glow text-center">下载</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative min-h-screen flex items-center justify-center pt-16 overflow-hidden">
+        <!-- Ambient light -->
+        <div class="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-terminal-glow/[0.03] rounded-full blur-[120px] pointer-events-none"></div>
+        <div class="absolute bottom-0 left-0 w-[400px] h-[400px] bg-terminal-accent/[0.02] rounded-full blur-[100px] pointer-events-none"></div>
+
+        <!-- Particles -->
+        <div class="absolute inset-0 pointer-events-none overflow-hidden" id="particles"></div>
+
+        <div class="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 text-center">
+            <!-- Version badge -->
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-terminal-border bg-terminal-surface/50 mb-8 fade-up">
+                <span class="w-2 h-2 rounded-full bg-terminal-accent animate-pulse"></span>
+                <span class="text-xs font-mono text-terminal-muted">v2.7.0 预发布版 · 完全免费</span>
+            </div>
+
+            <!-- Title -->
+            <h1 class="font-display font-bold text-4xl sm:text-5xl md:text-7xl leading-tight tracking-tight mb-6 fade-up">
+                <span class="text-terminal-text">更快更好的</span><br>
+                <span class="glow-text text-terminal-glow">终端客户端</span>
+            </h1>
+
+            <!-- Subtitle -->
+            <p class="text-lg sm:text-xl text-terminal-muted max-w-2xl mx-auto mb-8 font-body leading-relaxed fade-up">
+                专为 DevOps 打造的高性能 SSH/Telnet/Serial/Shell/Sftp 客户端<br class="hidden sm:block">
+                <span class="text-terminal-dim">跨平台 · 开源 · 极致性能</span>
+            </p>
+
+            <!-- Protocol tags -->
+            <div class="flex flex-wrap justify-center gap-2 mb-10 fade-up">
+                <span class="proto-tag px-3 py-1 rounded-md text-xs font-mono text-terminal-glow/80 bg-terminal-glow/5">SSH v2</span>
+                <span class="proto-tag px-3 py-1 rounded-md text-xs font-mono text-terminal-glow/80 bg-terminal-glow/5">Telnet</span>
+                <span class="proto-tag px-3 py-1 rounded-md text-xs font-mono text-terminal-glow/80 bg-terminal-glow/5">SFTP/SCP</span>
+                <span class="proto-tag px-3 py-1 rounded-md text-xs font-mono text-terminal-glow/80 bg-terminal-glow/5">Serial</span>
+                <span class="proto-tag px-3 py-1 rounded-md text-xs font-mono text-terminal-glow/80 bg-terminal-glow/5">Shell</span>
+                <span class="proto-tag px-3 py-1 rounded-md text-xs font-mono text-terminal-glow/80 bg-terminal-glow/5">Tmux</span>
+            </div>
+
+            <!-- CTA Buttons -->
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 fade-up">
+                <a href="https://github.com/kingToolbox/WindTerm/releases" target="_blank" class="group relative px-8 py-3.5 bg-terminal-glow text-terminal-bg font-display font-semibold rounded-xl hover:shadow-[0_0_40px_rgba(0,229,255,0.3)] transition-all duration-300">
+                    <span class="flex items-center gap-2">
+                        <i class="fas fa-download"></i> 立即下载
+                    </span>
+                </a>
+                <a href="https://github.com/kingToolbox/WindTerm" target="_blank" class="px-8 py-3.5 border border-terminal-border text-terminal-text font-display font-medium rounded-xl hover:border-terminal-muted transition-all flex items-center gap-2">
+                    <i class="fab fa-github"></i> GitHub
+                </a>
+            </div>
+
+            <!-- Platform icons -->
+            <div class="flex items-center justify-center gap-6 text-terminal-dim fade-up">
+                <div class="flex items-center gap-2 text-sm">
+                    <i class="fab fa-windows text-lg"></i>
+                    <span class="font-mono text-xs">Windows</span>
+                </div>
+                <div class="w-px h-4 bg-terminal-border"></div>
+                <div class="flex items-center gap-2 text-sm">
+                    <i class="fab fa-apple text-lg"></i>
+                    <span class="font-mono text-xs">macOS</span>
+                </div>
+                <div class="w-px h-4 bg-terminal-border"></div>
+                <div class="flex items-center gap-2 text-sm">
+                    <i class="fab fa-linux text-lg"></i>
+                    <span class="font-mono text-xs">Linux</span>
+                </div>
+            </div>
+
+            <!-- Terminal preview -->
+            <div class="mt-16 fade-up">
+                <div class="relative max-w-3xl mx-auto">
+                    <div class="absolute -inset-1 bg-gradient-to-b from-terminal-glow/10 to-transparent rounded-2xl blur-sm"></div>
+                    <div class="relative bg-terminal-surface border border-terminal-border rounded-2xl overflow-hidden scanlines">
+                        <!-- Title bar -->
+                        <div class="flex items-center gap-2 px-4 py-3 border-b border-terminal-border bg-terminal-card/50">
+                            <div class="flex gap-1.5">
+                                <div class="w-3 h-3 rounded-full bg-red-500/70"></div>
+                                <div class="w-3 h-3 rounded-full bg-yellow-500/70"></div>
+                                <div class="w-3 h-3 rounded-full bg-green-500/70"></div>
+                            </div>
+                            <span class="font-mono text-xs text-terminal-muted ml-2">windterm — ssh user@server</span>
+                        </div>
+                        <!-- Terminal content -->
+                        <div class="p-5 font-mono text-sm leading-relaxed text-left">
+                            <div class="text-terminal-muted">Last login: Mon Mar  9 10:23:41 2026 from 192.168.1.100</div>
+                            <div class="mt-2">
+                                <span class="text-terminal-accent">user@server</span><span class="text-terminal-muted">:</span><span class="text-terminal-glow">~</span><span class="text-terminal-muted">$</span>
+                                <span class="text-terminal-text ml-1">cat /etc/os-release | head -2</span>
+                            </div>
+                            <div class="text-terminal-text/70 mt-1">NAME="Ubuntu"</div>
+                            <div class="text-terminal-text/70">VERSION="22.04.3 LTS (Jammy Jellyfish)"</div>
+                            <div class="mt-2">
+                                <span class="text-terminal-accent">user@server</span><span class="text-terminal-muted">:</span><span class="text-terminal-glow">~</span><span class="text-terminal-muted">$</span>
+                                <span class="text-terminal-text ml-1">windterm --version</span>
+                            </div>
+                            <div class="text-terminal-warm mt-1">WindTerm v2.7.0 — 极速 · 安全 · 免费</div>
+                            <div class="mt-2">
+                                <span class="text-terminal-accent">user@server</span><span class="text-terminal-muted">:</span><span class="text-terminal-glow">~</span><span class="text-terminal-muted">$</span>
+                                <span class="cursor-blink ml-1"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scroll indicator -->
+        <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-terminal-dim animate-bounce">
+            <span class="text-xs font-mono">向下滚动</span>
+            <i class="fas fa-chevron-down text-xs"></i>
+        </div>
+    </section>
+
+    <!-- Stats Bar -->
+    <section class="relative border-y border-terminal-border bg-terminal-surface/30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center fade-up">
+                <div>
+                    <div class="font-display font-bold text-3xl md:text-4xl text-terminal-glow glow-text">52.1</div>
+                    <div class="text-xs font-mono text-terminal-muted mt-1">MB/s 数据速率</div>
+                    <div class="text-xs text-terminal-dim mt-0.5">Telnet 基准</div>
+                </div>
+                <div>
+                    <div class="font-display font-bold text-3xl md:text-4xl text-terminal-accent">247</div>
+                    <div class="text-xs font-mono text-terminal-muted mt-1">MB/s SFTP 上传</div>
+                    <div class="text-xs text-terminal-dim mt-0.5">高速传输模式</div>
+                </div>
+                <div>
+                    <div class="font-display font-bold text-3xl md:text-4xl text-terminal-warm">90%</div>
+                    <div class="text-xs font-mono text-terminal-muted mt-1">内存压缩率</div>
+                    <div class="text-xs text-terminal-dim mt-0.5">动态内存压缩</div>
+                </div>
+                <div>
+                    <div class="font-display font-bold text-3xl md:text-4xl text-terminal-text">2.9</div>
+                    <div class="text-xs font-mono text-terminal-muted mt-1">ms 平均延迟</div>
+                    <div class="text-xs text-terminal-dim mt-0.5">文本编辑器延迟</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="relative py-24 md:py-32">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Section header -->
+            <div class="text-center mb-16 fade-up">
+                <div class="inline-block px-3 py-1 bg-terminal-glow/5 border border-terminal-glow/20 rounded-md mb-4">
+                    <span class="font-mono text-xs text-terminal-glow tracking-widest uppercase">FEATURES</span>
+                </div>
+                <h2 class="font-display font-bold text-3xl md:text-4xl text-terminal-text">功能特性</h2>
+                <p class="text-terminal-muted mt-3 max-w-xl mx-auto">为专业开发者和运维工程师设计的全方位终端解决方案</p>
+            </div>
+
+            <!-- Feature Grid -->
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5 stagger">
+                <!-- SSH -->
+                <div class="feature-card rounded-xl p-6 fade-up" style="--i:0">
+                    <div class="w-10 h-10 rounded-lg bg-terminal-glow/10 flex items-center justify-center mb-4">
+                        <i class="fas fa-lock text-terminal-glow"></i>
+                    </div>
+                    <h3 class="font-display font-semibold text-lg mb-2">SSH 全功能支持</h3>
+                    <p class="text-sm text-terminal-muted leading-relaxed">SSH v2 协议，支持自动登录、代理转发、X11 转发、端口转发（本地/远程/动态）、ProxyCommand/ProxyJump、ControlMaster</p>
+                </div>
+
+                <!-- SFTP -->
+                <div class="feature-card rounded-xl p-6 fade-up" style="--i:1">
+                    <div class="w-10 h-10 rounded-lg bg-terminal-accent/10 flex items-center justify-center mb-4">
+                        <i class="fas fa-exchange-alt text-terminal-accent"></i>
+                    </div>
+                    <h3 class="font-display font-semibold text-lg mb-2">文件传输</h3>
+                    <p class="text-sm text-terminal-muted leading-relaxed">集成 SFTP/SCP 客户端和本地文件管理器，支持 XModem/YModem/ZModem，高速传输可达 247 MB/s</p>
+                </div>
+
+                <!-- Multi Protocol -->
+                <div class="feature-card rounded-xl p-6 fade-up" style="--i:2">
+                    <div class="w-10 h-10 rounded-lg bg-terminal-warm/10 flex items-center justify-center mb-4">
+                        <i class="fas fa-network-wired text-terminal-warm"></i>
+                    </div>
+                    <h3 class="font-display font-semibold text-lg mb-2">多协议支持</h3>
+                    <p class="text-sm text-terminal-muted leading-relaxed">Telnet、Raw TCP、Serial 串口协议，支持 HTTP/SOCKS5 代理和跳板机代理</p>
+                </div>
+
+                <!-- Terminal -->
+                <div class="feature-card rounded-xl p-6 fade-up" style="--i:3">
+                    <div class="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center mb-4">
+                        <i class="fas fa-terminal text-purple-400"></i>
+                    </div>
+                    <h3 class="font-display font-semibold text-lg mb-2">终端仿真</h3>
+                    <p class="text-sm text-terminal-muted leading-relaxed">支持 vt100/vt220/vt340/vt420/vt520/xterm/xterm-256-colors，Unicode 13、emoji、真彩色</p>
+                </div>
+
+                <!-- Shell -->
+                <div class="feature-card rounded-xl p-6 fade-up" style="--i:4">
+                    <div class="w-10 h-10 rounded-lg bg-pink-500/10 flex items-center justify-center mb-4">
+                        <i class="fas fa-code text-pink-400"></i>
+                    </div>
+                    <h3 class="font-display font-semibold text-lg mb-2">跨平台 Shell</h3>
+                    <p class="text-sm text-terminal-muted leading-relaxed">Windows Cmd/PowerShell（含管理员），Linux/macOS bash/zsh/PowerShell Core，Tmux 集成</p>
+                </div>
+
+                <!-- GUI -->
+                <div class="feature-card rounded-xl p-6 fade-up" style="--i:5">
+                    <div class="w-10 h-10 rounded-lg bg-sky-500/10 flex items-center justify-center mb-4">
+                        <i class="fas fa-palette text-sky-400"></i>
+                    </div>
+                    <h3 class="font-display font-semibold text-lg mb-2">现代化界面</h3>
+                    <p class="text-sm text-terminal-muted leading-relaxed">自动补全、命令面板、分屏视图、多主题、Powerline 支持、Vim 键绑定模式</p>
+                </div>
+
+                <!-- Session -->
+                <div class="feature-card rounded-xl p-6 fade-up" style="--i:6">
+                    <div class="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center mb-4">
+                        <i class="fas fa-layer-group text-orange-400"></i>
+                    </div>
+                    <h3 class="font-display font-semibold text-lg mb-2">会话管理</h3>
+                    <p class="text-sm text-terminal-muted leading-relaxed">会话树管理、自动/手动日志记录、重启恢复会话和布局、同步输入多终端</p>
+                </div>
+
+                <!-- Security -->
+                <div class="feature-card rounded-xl p-6 fade-up" style="--i:7">
+                    <div class="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center mb-4">
+                        <i class="fas fa-shield-alt text-emerald-400"></i>
+                    </div>
+                    <h3 class="font-display font-semibold text-lg mb-2">安全增强</h3>
+                    <p class="text-sm text-terminal-muted leading-relaxed">增强的用户名密码保护、锁定屏幕、SSH Agent、GSSAPI 认证、粘贴确认对话框</p>
+                </div>
+
+                <!-- Performance -->
+                <div class="feature-card rounded-xl p-6 fade-up" style="--i:8">
+                    <div class="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center mb-4">
+                        <i class="fas fa-bolt text-red-400"></i>
+                    </div>
+                    <h3 class="font-display font-semibold text-lg mb-2">极致性能</h3>
+                    <p class="text-sm text-terminal-muted leading-relaxed">动态内存压缩减少 20%~90% 内存，无限回滚行数，千万行数据仅需 133MB 内存</p>
+                </div>
+            </div>
+
+            <!-- Additional features list -->
+            <div class="mt-16 fade-up">
+                <div class="feature-card rounded-xl p-8">
+                    <h3 class="font-display font-semibold text-lg mb-6 text-center">更多亮点功能</h3>
+                    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-3 text-sm text-terminal-muted">
+                        <div class="flex items-start gap-2"><i class="fas fa-check text-terminal-accent text-xs mt-1"></i>自由输入模式</div>
+                        <div class="flex items-start gap-2"><i class="fas fa-check text-terminal-accent text-xs mt-1"></i>专注模式</div>
+                        <div class="flex items-start gap-2"><i class="fas fa-check text-terminal-accent text-xs mt-1"></i>命令发送器</div>
+                        <div class="flex items-start gap-2"><i class="fas fa-check text-terminal-accent text-xs mt-1"></i>资源管理器面板</div>
+                        <div class="flex items-start gap-2"><i class="fas fa-check text-terminal-accent text-xs mt-1"></i>快捷栏</div>
+                        <div class="flex items-start gap-2"><i class="fas fa-check text-terminal-accent text-xs mt-1"></i>选中即复制</div>
+                        <div class="flex items-start gap-2"><i class="fas fa-check text-terminal-accent text-xs mt-1"></i>在线搜索（Google/Bing/GitHub）</div>
+                        <div class="flex items-start gap-2"><i class="fas fa-check text-terminal-accent text-xs mt-1"></i>窗口透明度设置</div>
+                        <div class="flex items-start gap-2"><i class="fas fa-check text-terminal-accent text-xs mt-1"></i>标签页颜色标记</div>
+                        <div class="flex items-start gap-2"><i class="fas fa-check text-terminal-accent text-xs mt-1"></i>高亮匹配分隔符</div>
+                        <div class="flex items-start gap-2"><i class="fas fa-check text-terminal-accent text-xs mt-1"></i>多语言界面</div>
+                        <div class="flex items-start gap-2"><i class="fas fa-check text-terminal-accent text-xs mt-1"></i>输入时隐藏鼠标</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Performance Section -->
+    <section id="performance" class="relative py-24 md:py-32 border-t border-terminal-border">
+        <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-terminal-glow/[0.02] rounded-full blur-[150px] pointer-events-none"></div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Section header -->
+            <div class="text-center mb-16 fade-up">
+                <div class="inline-block px-3 py-1 bg-terminal-accent/5 border border-terminal-accent/20 rounded-md mb-4">
+                    <span class="font-mono text-xs text-terminal-accent tracking-widest uppercase">BENCHMARK</span>
+                </div>
+                <h2 class="font-display font-bold text-3xl md:text-4xl text-terminal-text">性能基准测试</h2>
+                <p class="text-terminal-muted mt-3 max-w-xl mx-auto">实测数据证明 WindTerm 在速度和内存方面的领先优势</p>
+            </div>
+
+            <!-- SFTP Performance -->
+            <div class="mb-20 fade-up">
+                <h3 class="font-display font-semibold text-xl mb-2 flex items-center gap-3">
+                    <span class="w-8 h-8 rounded bg-terminal-glow/10 flex items-center justify-center"><i class="fas fa-file-upload text-terminal-glow text-sm"></i></span>
+                    SFTP 传输性能
+                </h3>
+                <p class="text-sm text-terminal-muted mb-8 ml-11">5GB 大文件随机数据测试 · Windows 10 / WSL Ubuntu</p>
+
+                <div class="space-y-5 ml-0 md:ml-11">
+                    <!-- Download comparison -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-mono text-terminal-text">WindTerm 1.72</span>
+                            <span class="text-sm font-mono text-terminal-glow">216.3 MB/s · 23s</span>
+                        </div>
+                        <div class="h-3 bg-terminal-surface rounded-full overflow-hidden">
+                            <div class="perf-bar h-full bg-gradient-to-r from-terminal-glow/80 to-terminal-glow rounded-full" style="--bar-width: 100%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-mono text-terminal-muted">FileZilla</span>
+                            <span class="text-sm font-mono text-terminal-muted">161.1 MB/s · 32s</span>
+                        </div>
+                        <div class="h-3 bg-terminal-surface rounded-full overflow-hidden">
+                            <div class="perf-bar h-full bg-terminal-dim rounded-full" style="--bar-width: 74%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-mono text-terminal-muted">WinSCP</span>
+                            <span class="text-sm font-mono text-terminal-muted">63.7 MB/s · 81s</span>
+                        </div>
+                        <div class="h-3 bg-terminal-surface rounded-full overflow-hidden">
+                            <div class="perf-bar h-full bg-terminal-dim rounded-full" style="--bar-width: 29%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Terminal Performance -->
+            <div class="mb-20 fade-up">
+                <h3 class="font-display font-semibold text-xl mb-2 flex items-center gap-3">
+                    <span class="w-8 h-8 rounded bg-terminal-accent/10 flex items-center justify-center"><i class="fas fa-tachometer-alt text-terminal-accent text-sm"></i></span>
+                    终端渲染性能
+                </h3>
+                <p class="text-sm text-terminal-muted mb-8 ml-11">time seq 1 10000000 · 无限回滚 · SSH 连接</p>
+
+                <div class="overflow-x-auto ml-0 md:ml-11">
+                    <table class="bench-table w-full text-sm">
+                        <thead>
+                            <tr>
+                                <th class="text-left py-3 px-4 rounded-tl-lg text-terminal-muted font-medium uppercase">终端</th>
+                                <th class="text-right py-3 px-4 text-terminal-muted font-medium">耗时</th>
+                                <th class="text-right py-3 px-4 rounded-tr-lg text-terminal-muted font-medium">内存</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="py-3 px-4 font-mono winner flex items-center gap-2">
+                                    <i class="fas fa-trophy text-terminal-warm text-xs"></i> WindTerm
+                                </td>
+                                <td class="py-3 px-4 text-right font-mono winner">10.674s</td>
+                                <td class="py-3 px-4 text-right font-mono winner">133.3 MB</td>
+                            </tr>
+                            <tr>
+                                <td class="py-3 px-4 font-mono text-terminal-muted">Alacritty</td>
+                                <td class="py-3 px-4 text-right font-mono text-terminal-muted">11.598s</td>
+                                <td class="py-3 px-4 text-right font-mono text-terminal-dim">限制 100K 行</td>
+                            </tr>
+                            <tr>
+                                <td class="py-3 px-4 font-mono text-terminal-muted">iTerm2</td>
+                                <td class="py-3 px-4 text-right font-mono text-terminal-muted">20.468s</td>
+                                <td class="py-3 px-4 text-right font-mono text-terminal-muted">2,231 MB</td>
+                            </tr>
+                            <tr>
+                                <td class="py-3 px-4 font-mono text-terminal-muted">Windows Terminal</td>
+                                <td class="py-3 px-4 text-right font-mono text-terminal-muted">264.739s</td>
+                                <td class="py-3 px-4 text-right font-mono text-terminal-dim">限制 65K 行</td>
+                            </tr>
+                            <tr>
+                                <td class="py-3 px-4 font-mono text-terminal-dim">rxvt / putty / xterm / kitty</td>
+                                <td class="py-3 px-4 text-right font-mono text-terminal-dim">—</td>
+                                <td class="py-3 px-4 text-right font-mono text-red-400/60">内存不足</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Latency -->
+            <div class="fade-up">
+                <h3 class="font-display font-semibold text-xl mb-2 flex items-center gap-3">
+                    <span class="w-8 h-8 rounded bg-terminal-warm/10 flex items-center justify-center"><i class="fas fa-clock text-terminal-warm text-sm"></i></span>
+                    输入延迟
+                </h3>
+                <p class="text-sm text-terminal-muted mb-8 ml-11">文本编辑器键入延迟对比（WindEdit 文本组件）</p>
+
+                <div class="grid md:grid-cols-3 gap-5 ml-0 md:ml-11">
+                    <div class="feature-card rounded-xl p-6 text-center">
+                        <div class="font-display font-bold text-3xl text-terminal-glow mb-1">2.9 ms</div>
+                        <div class="text-sm text-terminal-muted mb-2">平均延迟</div>
+                        <div class="font-mono text-xs text-terminal-accent">WindEdit</div>
+                    </div>
+                    <div class="feature-card rounded-xl p-6 text-center">
+                        <div class="font-display font-bold text-3xl text-terminal-muted mb-1">7.8 ms</div>
+                        <div class="text-sm text-terminal-muted mb-2">平均延迟</div>
+                        <div class="font-mono text-xs text-terminal-dim">Windows 记事本</div>
+                    </div>
+                    <div class="feature-card rounded-xl p-6 text-center">
+                        <div class="font-display font-bold text-3xl text-terminal-muted mb-1">2.8 ms</div>
+                        <div class="text-sm text-terminal-muted mb-2">平均延迟</div>
+                        <div class="font-mono text-xs text-terminal-dim">GVim</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Screenshots Section -->
+    <section id="screenshots" class="relative py-24 md:py-32 border-t border-terminal-border">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16 fade-up">
+                <div class="inline-block px-3 py-1 bg-terminal-warm/5 border border-terminal-warm/20 rounded-md mb-4">
+                    <span class="font-mono text-xs text-terminal-warm tracking-widest uppercase">SCREENSHOTS</span>
+                </div>
+                <h2 class="font-display font-bold text-3xl md:text-4xl text-terminal-text">界面截图</h2>
+                <p class="text-terminal-muted mt-3">简洁优雅的现代化终端界面</p>
+            </div>
+
+            <div class="space-y-8">
+                <!-- Main Window -->
+                <div class="fade-up">
+                    <div class="relative group">
+                        <div class="absolute -inset-0.5 bg-gradient-to-r from-terminal-glow/20 via-transparent to-terminal-accent/20 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm"></div>
+                        <div class="relative bg-terminal-surface border border-terminal-border rounded-2xl overflow-hidden">
+                            <div class="flex items-center justify-between px-5 py-3 border-b border-terminal-border">
+                                <span class="font-mono text-xs text-terminal-muted">主窗口 — zsh</span>
+                                <div class="flex gap-1.5">
+                                    <div class="w-2.5 h-2.5 rounded-full bg-terminal-border"></div>
+                                    <div class="w-2.5 h-2.5 rounded-full bg-terminal-border"></div>
+                                    <div class="w-2.5 h-2.5 rounded-full bg-terminal-border"></div>
+                                </div>
+                            </div>
+                            <img src="https://raw.githubusercontent.com/kingToolbox/WindTerm/master/images/screenshots/WindTerm.png" alt="WindTerm 主窗口" class="w-full" loading="lazy">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-8">
+                    <!-- Split View -->
+                    <div class="fade-up">
+                        <div class="relative group">
+                            <div class="absolute -inset-0.5 bg-gradient-to-r from-terminal-glow/20 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm"></div>
+                            <div class="relative bg-terminal-surface border border-terminal-border rounded-2xl overflow-hidden">
+                                <div class="flex items-center justify-between px-5 py-3 border-b border-terminal-border">
+                                    <span class="font-mono text-xs text-terminal-muted">分屏视图</span>
+                                </div>
+                                <img src="https://raw.githubusercontent.com/kingToolbox/WindTerm/master/images/screenshots/SplitView.png" alt="分屏视图" class="w-full" loading="lazy">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DigeWhite Theme -->
+                    <div class="fade-up">
+                        <div class="relative group">
+                            <div class="absolute -inset-0.5 bg-gradient-to-r from-transparent to-terminal-accent/20 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm"></div>
+                            <div class="relative bg-terminal-surface border border-terminal-border rounded-2xl overflow-hidden">
+                                <div class="flex items-center justify-between px-5 py-3 border-b border-terminal-border">
+                                    <span class="font-mono text-xs text-terminal-muted">DigeWhite 主题</span>
+                                </div>
+                                <img src="https://raw.githubusercontent.com/kingToolbox/WindTerm/master/images/screenshots/WindTerm_DigeWhite_Theme.png" alt="DigeWhite 主题" class="w-full" loading="lazy">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Download Section -->
+    <section class="relative py-24 md:py-32 border-t border-terminal-border">
+        <div class="absolute inset-0 bg-gradient-to-b from-terminal-glow/[0.02] to-transparent pointer-events-none"></div>
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <div class="fade-up">
+                <div class="inline-block px-3 py-1 bg-terminal-glow/5 border border-terminal-glow/20 rounded-md mb-4">
+                    <span class="font-mono text-xs text-terminal-glow tracking-widest uppercase">DOWNLOAD</span>
+                </div>
+                <h2 class="font-display font-bold text-3xl md:text-4xl text-terminal-text mb-4">立即下载</h2>
+                <p class="text-terminal-muted mb-4">完全免费，可用于商业和非商业用途，无任何限制</p>
+                <p class="text-sm text-terminal-dim mb-12">开源代码基于 Apache-2.0 许可证</p>
+            </div>
+
+            <div class="grid sm:grid-cols-3 gap-5 mb-12 fade-up">
+                <a href="https://github.com/kingToolbox/WindTerm/releases" target="_blank" class="platform-btn rounded-xl p-6 text-center group">
+                    <i class="fab fa-windows text-3xl text-terminal-glow/60 group-hover:text-terminal-glow transition-colors mb-3 block"></i>
+                    <div class="font-display font-semibold">Windows</div>
+                    <div class="text-xs text-terminal-muted mt-1 font-mono">x64 / x86</div>
+                </a>
+                <a href="https://github.com/kingToolbox/WindTerm/releases" target="_blank" class="platform-btn rounded-xl p-6 text-center group">
+                    <i class="fab fa-apple text-3xl text-terminal-glow/60 group-hover:text-terminal-glow transition-colors mb-3 block"></i>
+                    <div class="font-display font-semibold">macOS</div>
+                    <div class="text-xs text-terminal-muted mt-1 font-mono">Universal</div>
+                </a>
+                <a href="https://github.com/kingToolbox/WindTerm/releases" target="_blank" class="platform-btn rounded-xl p-6 text-center group">
+                    <i class="fab fa-linux text-3xl text-terminal-glow/60 group-hover:text-terminal-glow transition-colors mb-3 block"></i>
+                    <div class="font-display font-semibold">Linux</div>
+                    <div class="text-xs text-terminal-muted mt-1 font-mono">x64</div>
+                </a>
+            </div>
+
+            <div class="fade-up">
+                <a href="https://github.com/kingToolbox/WindTerm/releases" target="_blank" class="inline-flex items-center gap-2 text-sm text-terminal-muted hover:text-terminal-glow transition-colors font-mono">
+                    <i class="fab fa-github"></i> 前往 GitHub Releases 查看所有版本
+                    <i class="fas fa-arrow-right text-xs"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Roadmap Section -->
+    <section id="roadmap" class="relative py-24 md:py-32 border-t border-terminal-border">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16 fade-up">
+                <div class="inline-block px-3 py-1 bg-purple-500/5 border border-purple-500/20 rounded-md mb-4">
+                    <span class="font-mono text-xs text-purple-400 tracking-widest uppercase">ROADMAP</span>
+                </div>
+                <h2 class="font-display font-bold text-3xl md:text-4xl text-terminal-text">开发路线图</h2>
+                <p class="text-terminal-muted mt-3">发布周期：2-3 个月 · 预发布周期：4~6 周</p>
+            </div>
+
+            <!-- Timeline -->
+            <div class="relative fade-up">
+                <!-- Vertical line -->
+                <div class="absolute left-5 md:left-1/2 top-0 bottom-0 w-px bg-terminal-border md:-translate-x-px"></div>
+
+                <!-- v0.x -->
+                <div class="relative flex flex-col md:flex-row items-start mb-12 md:mb-16">
+                    <div class="hidden md:block md:w-1/2 md:pr-12 md:text-right">
+                        <div class="font-mono text-xs text-terminal-dim mb-1">很久以前 ~ 2020 年春</div>
+                        <h4 class="font-display font-semibold text-terminal-muted">v0.x · 基础</h4>
+                        <p class="text-sm text-terminal-dim mt-1">基础框架和基本功能，完成高性能文本编辑器 WindEdit</p>
+                    </div>
+                    <div class="absolute left-5 md:left-1/2 -translate-x-1/2 mt-1">
+                        <div class="timeline-dot"></div>
+                    </div>
+                    <div class="pl-14 md:pl-12 md:w-1/2 md:hidden">
+                        <div class="font-mono text-xs text-terminal-dim mb-1">很久以前 ~ 2020 年春</div>
+                        <h4 class="font-display font-semibold text-terminal-muted">v0.x · 基础</h4>
+                        <p class="text-sm text-terminal-dim mt-1">基础框架和基本功能，完成高性能文本编辑器 WindEdit</p>
+                    </div>
+                    <div class="hidden md:block md:w-1/2 md:pl-12">
+                        <span class="inline-block px-2 py-0.5 text-xs font-mono bg-terminal-dim/20 text-terminal-dim rounded">已完成</span>
+                    </div>
+                </div>
+
+                <!-- v1.x -->
+                <div class="relative flex flex-col md:flex-row items-start mb-12 md:mb-16">
+                    <div class="hidden md:block md:w-1/2 md:pr-12 md:text-right">
+                        <span class="inline-block px-2 py-0.5 text-xs font-mono bg-terminal-dim/20 text-terminal-dim rounded">已完成</span>
+                    </div>
+                    <div class="absolute left-5 md:left-1/2 -translate-x-1/2 mt-1">
+                        <div class="timeline-dot"></div>
+                    </div>
+                    <div class="pl-14 md:pl-12 md:w-1/2">
+                        <div class="font-mono text-xs text-terminal-dim mb-1">2020 年春 ~ 2020 年冬</div>
+                        <h4 class="font-display font-semibold text-terminal-muted">v1.x · 手动</h4>
+                        <p class="text-sm text-terminal-dim mt-1">完善功能，大多数开发者可在日常工作中使用</p>
+                    </div>
+                </div>
+
+                <!-- v2.x -->
+                <div class="relative flex flex-col md:flex-row items-start mb-12 md:mb-16">
+                    <div class="hidden md:block md:w-1/2 md:pr-12 md:text-right">
+                        <div class="font-mono text-xs text-terminal-glow/60 mb-1">2021 年春 ~ 进行中</div>
+                        <h4 class="font-display font-semibold text-terminal-glow">v2.x · 半自动</h4>
+                        <p class="text-sm text-terminal-muted mt-1">通过触发器、宏、事件、通知等，辅助开发者完成部分操作</p>
+                        <div class="mt-3 text-sm text-terminal-muted space-y-1">
+                            <div>· SSH 代理转发 · Tmux 集成</div>
+                            <div>· 外部工具 · Mosh / Rlogin</div>
+                            <div>· 脚本、宏和插件系统</div>
+                        </div>
+                    </div>
+                    <div class="absolute left-5 md:left-1/2 -translate-x-1/2 mt-1">
+                        <div class="timeline-dot active"></div>
+                    </div>
+                    <div class="pl-14 md:pl-12 md:w-1/2 md:hidden">
+                        <div class="font-mono text-xs text-terminal-glow/60 mb-1">2021 年春 ~ 进行中</div>
+                        <h4 class="font-display font-semibold text-terminal-glow">v2.x · 半自动</h4>
+                        <p class="text-sm text-terminal-muted mt-1">通过触发器、宏、事件、通知等，辅助开发者完成部分操作</p>
+                    </div>
+                    <div class="hidden md:block md:w-1/2 md:pl-12">
+                        <span class="inline-block px-2 py-0.5 text-xs font-mono bg-terminal-glow/10 text-terminal-glow rounded border border-terminal-glow/30">开发中</span>
+                    </div>
+                </div>
+
+                <!-- v3.x -->
+                <div class="relative flex flex-col md:flex-row items-start">
+                    <div class="hidden md:block md:w-1/2 md:pr-12 md:text-right">
+                        <span class="inline-block px-2 py-0.5 text-xs font-mono bg-terminal-warm/10 text-terminal-warm rounded border border-terminal-warm/30">规划中</span>
+                    </div>
+                    <div class="absolute left-5 md:left-1/2 -translate-x-1/2 mt-1">
+                        <div class="timeline-dot"></div>
+                    </div>
+                    <div class="pl-14 md:pl-12 md:w-1/2">
+                        <div class="font-mono text-xs text-terminal-dim mb-1">未来计划</div>
+                        <h4 class="font-display font-semibold text-terminal-muted">v3.x · 全自动</h4>
+                        <p class="text-sm text-terminal-dim mt-1">通过插件、脚本、机器学习等，实现自动化运维，达到无人值守</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Community & Acknowledgement -->
+    <section class="relative py-24 md:py-32 border-t border-terminal-border">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-2 gap-12 md:gap-20">
+                <!-- Community -->
+                <div class="fade-up">
+                    <h3 class="font-display font-semibold text-xl mb-6 flex items-center gap-3">
+                        <span class="w-8 h-8 rounded bg-sky-500/10 flex items-center justify-center"><i class="fas fa-users text-sky-400 text-sm"></i></span>
+                        社区参与
+                    </h3>
+                    <div class="space-y-4">
+                        <a href="https://github.com/kingToolbox/WindTerm/issues" target="_blank" class="feature-card rounded-xl p-5 flex items-center gap-4 group block">
+                            <div class="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-bug text-orange-400"></i>
+                            </div>
+                            <div>
+                                <div class="font-display font-medium group-hover:text-terminal-glow transition-colors">问题反馈</div>
+                                <div class="text-xs text-terminal-muted mt-0.5">提交 Bug 报告或功能请求</div>
+                            </div>
+                            <i class="fas fa-arrow-right text-terminal-dim ml-auto group-hover:text-terminal-glow transition-colors"></i>
+                        </a>
+                        <a href="https://github.com/kingToolbox/WindTerm/discussions" target="_blank" class="feature-card rounded-xl p-5 flex items-center gap-4 group block">
+                            <div class="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-comments text-purple-400"></i>
+                            </div>
+                            <div>
+                                <div class="font-display font-medium group-hover:text-terminal-glow transition-colors">讨论区</div>
+                                <div class="text-xs text-terminal-muted mt-0.5">参与社区讨论，分享使用心得</div>
+                            </div>
+                            <i class="fas fa-arrow-right text-terminal-dim ml-auto group-hover:text-terminal-glow transition-colors"></i>
+                        </a>
+                        <a href="https://kingtoolbox.github.io" target="_blank" class="feature-card rounded-xl p-5 flex items-center gap-4 group block">
+                            <div class="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-play-circle text-emerald-400"></i>
+                            </div>
+                            <div>
+                                <div class="font-display font-medium group-hover:text-terminal-glow transition-colors">介绍视频</div>
+                                <div class="text-xs text-terminal-muted mt-0.5">观看功能演示和教程视频</div>
+                            </div>
+                            <i class="fas fa-arrow-right text-terminal-dim ml-auto group-hover:text-terminal-glow transition-colors"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Acknowledgement -->
+                <div class="fade-up">
+                    <h3 class="font-display font-semibold text-xl mb-6 flex items-center gap-3">
+                        <span class="w-8 h-8 rounded bg-terminal-warm/10 flex items-center justify-center"><i class="fas fa-heart text-terminal-warm text-sm"></i></span>
+                        致谢
+                    </h3>
+                    <p class="text-sm text-terminal-muted mb-6">感谢以下贡献者为 WindTerm 的国际化做出的贡献</p>
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-3 text-sm">
+                            <div class="w-8 h-8 rounded-full bg-terminal-surface border border-terminal-border flex items-center justify-center text-xs font-mono text-terminal-glow">FR</div>
+                            <div>
+                                <a href="https://github.com/EvoWebFrance" target="_blank" class="text-terminal-text hover:text-terminal-glow transition-colors">EvoWebFrance</a>
+                                <span class="text-terminal-dim mx-1">·</span>
+                                <a href="https://github.com/LuxNegra" target="_blank" class="text-terminal-text hover:text-terminal-glow transition-colors">LuxNegra</a>
+                            </div>
+                            <span class="text-xs text-terminal-muted ml-auto">法语翻译</span>
+                        </div>
+                        <div class="flex items-center gap-3 text-sm">
+                            <div class="w-8 h-8 rounded-full bg-terminal-surface border border-terminal-border flex items-center justify-center text-xs font-mono text-terminal-glow">DE</div>
+                            <a href="https://github.com/kvnklk" target="_blank" class="text-terminal-text hover:text-terminal-glow transition-colors">kvnklk</a>
+                            <span class="text-xs text-terminal-muted ml-auto">德语翻译</span>
+                        </div>
+                        <div class="flex items-center gap-3 text-sm">
+                            <div class="w-8 h-8 rounded-full bg-terminal-surface border border-terminal-border flex items-center justify-center text-xs font-mono text-terminal-glow">CN</div>
+                            <div>
+                                <a href="https://github.com/Lemonawa" target="_blank" class="text-terminal-text hover:text-terminal-glow transition-colors">Lemonawa</a>
+                                <span class="text-terminal-dim mx-1">·</span>
+                                <a href="https://github.com/MosamXu" target="_blank" class="text-terminal-text hover:text-terminal-glow transition-colors">MosamXu</a>
+                            </div>
+                            <span class="text-xs text-terminal-muted ml-auto">简体中文翻译</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="border-t border-terminal-border py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-terminal-glow/20 to-terminal-accent/20 border border-terminal-glow/30 flex items-center justify-center">
+                        <span class="font-mono text-terminal-glow text-xs font-bold">W</span>
+                    </div>
+                    <span class="font-display font-semibold text-sm">WindTerm</span>
+                    <span class="text-terminal-dim text-xs font-mono">· 完全免费 · Apache-2.0</span>
+                </div>
+                <div class="flex items-center gap-6 text-sm text-terminal-muted">
+                    <a href="https://github.com/kingToolbox/WindTerm" target="_blank" class="hover:text-terminal-glow transition-colors"><i class="fab fa-github"></i></a>
+                    <a href="https://kingtoolbox.github.io" target="_blank" class="hover:text-terminal-glow transition-colors"><i class="fas fa-globe"></i></a>
+                    <a href="https://github.com/kingToolbox/WindTerm/discussions" target="_blank" class="hover:text-terminal-glow transition-colors"><i class="fas fa-comments"></i></a>
+                </div>
+                <div class="text-xs text-terminal-dim font-mono">
+                    © 2020-2026 kingToolbox. All rights reserved.
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile menu toggle
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+        mobileMenu.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => mobileMenu.classList.add('hidden'));
+        });
+
+        // Scroll animations
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    // Animate performance bars
+                    entry.target.querySelectorAll('.perf-bar').forEach(bar => {
+                        bar.classList.add('animate');
+                    });
+                }
+            });
+        }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+        document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+        // Particles
+        const particleContainer = document.getElementById('particles');
+        for (let i = 0; i < 20; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.top = 40 + Math.random() * 50 + '%';
+            particle.style.animationDelay = Math.random() * 4 + 's';
+            particle.style.animationDuration = 3 + Math.random() * 3 + 's';
+            particleContainer.appendChild(particle);
+        }
+
+        // Smooth nav highlight on scroll
+        const sections = document.querySelectorAll('section[id]');
+        const navLinks = document.querySelectorAll('nav a[href^="#"]');
+        window.addEventListener('scroll', () => {
+            const scrollY = window.scrollY + 100;
+            sections.forEach(section => {
+                const top = section.offsetTop;
+                const height = section.offsetHeight;
+                const id = section.getAttribute('id');
+                if (scrollY >= top && scrollY < top + height) {
+                    navLinks.forEach(link => {
+                        link.classList.remove('text-terminal-glow');
+                        if (link.getAttribute('href') === '#' + id) {
+                            link.classList.add('text-terminal-glow');
+                            link.classList.remove('text-terminal-muted');
+                        }
+                    });
+                }
+            });
+
+            // Nav background opacity
+            const nav = document.querySelector('nav');
+            if (scrollY > 50) {
+                nav.classList.add('border-terminal-border');
+            }
+        });
+    </script>
+</body>
+</html>
