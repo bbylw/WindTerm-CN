@@ -3,1361 +3,365 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WindTerm — 更快更好的终端客户端</title>
-    <meta name="description" content="WindTerm 是一款专为 DevOps 打造的高性能 SSH/Telnet/Serial/Shell/Sftp 客户端，完全免费，跨平台支持。">
+    <title>WindTerm — 重新定义终端效率</title>
+    <meta name="description" content="WindTerm — 下一代高性能跨平台终端，专为 DevOps 打造。">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Noto+Sans+SC:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     fontFamily: {
-                        display: ['Outfit', '"Noto Sans SC"', 'sans-serif'],
-                        mono: ['"JetBrains Mono"', 'monospace'],
-                        body: ['"Noto Sans SC"', 'Outfit', 'sans-serif'],
+                        sans: ['Plus Jakarta Sans', 'PingFang SC', 'Microsoft YaHei', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
                     },
                     colors: {
-                        ink: {
-                            950: '#0c0e14',
-                            900: '#12151e',
-                            800: '#191d29',
-                            700: '#212636',
-                            600: '#2b3245',
-                            500: '#3a4259',
-                            400: '#505a72',
-                            300: '#6e7a94',
-                            200: '#949db4',
-                            100: '#bac2d4',
-                            50:  '#e0e4ed',
-                        },
-                        cyan: {
-                            glow: '#5eead4',
-                            soft: '#99f0e0',
-                            pale: '#ccfbf1',
-                        },
-                        mint: '#34d399',
-                        solar: '#f59e0b',
-                        coral: '#f87171',
+                        brand: {
+                            base: '#0A0A0B',
+                            surface: '#121214',
+                            primary: '#3B82F6',
+                            secondary: '#A855F7',
+                            muted: '#8E9196',
+                        }
                     }
                 }
             }
         }
     </script>
     <style>
-        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-        html {
-            font-size: 16px;
-            text-rendering: optimizeLegibility;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
+        :root {
+            --brand-primary: #3B82F6;
+            --brand-secondary: #A855F7;
         }
 
         body {
-            font-family: 'Noto Sans SC', 'Outfit', sans-serif;
-            background: #0c0e14;
-            color: #e0e4ed;
+            background-color: #0A0A0B;
+            color: #F8FAFC;
+            -webkit-font-smoothing: antialiased;
             overflow-x: hidden;
-            line-height: 1.75;
         }
 
-        /* Elegant Scrollbar */
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #3a4259; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #5eead466; }
-
-        /* ---- ANIMATIONS ---- */
-        @keyframes fade-in-up {
-            from { opacity: 0; transform: translateY(40px) scale(0.98); }
-            to   { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        @keyframes fade-in {
-            from { opacity: 0; }
-            to   { opacity: 1; }
-        }
-        @keyframes glow-pulse {
-            0%, 100% { opacity: 0.4; }
-            50%      { opacity: 1; }
-        }
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50%      { transform: translateY(-12px); }
-        }
-        @keyframes typing {
-            from { width: 0; }
-            to   { width: 100%; }
-        }
-        @keyframes blink-caret {
-            50% { border-color: transparent; }
-        }
-        @keyframes orbit {
-            from { transform: rotate(0deg) translateX(140px) rotate(0deg); }
-            to   { transform: rotate(360deg) translateX(140px) rotate(-360deg); }
-        }
-        @keyframes scan {
-            0%   { transform: translateY(-100%); }
-            100% { transform: translateY(100vh); }
-        }
-        @keyframes counter {
-            from { --num: 0; }
-        }
-        @keyframes bar-grow {
-            from { transform: scaleX(0); }
-            to   { transform: scaleX(1); }
-        }
-        @keyframes shimmer {
-            0%   { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
-        }
-        @keyframes particle-rise {
-            0%   { opacity: 0; transform: translateY(0) scale(0); }
-            15%  { opacity: 0.8; }
-            100% { opacity: 0; transform: translateY(-260px) scale(0.6); }
-        }
-
-        /* Reveal system */
-        .reveal {
-            opacity: 0;
-            transform: translateY(44px);
-            transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
-                        transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .reveal.is-visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        .reveal-delay-1 { transition-delay: 0.1s; }
-        .reveal-delay-2 { transition-delay: 0.2s; }
-        .reveal-delay-3 { transition-delay: 0.3s; }
-        .reveal-delay-4 { transition-delay: 0.4s; }
-        .reveal-delay-5 { transition-delay: 0.5s; }
-        .reveal-delay-6 { transition-delay: 0.6s; }
-
-        /* Glassmorphism */
-        .glass {
-            background: rgba(18, 21, 30, 0.65);
-            backdrop-filter: blur(24px) saturate(160%);
-            -webkit-backdrop-filter: blur(24px) saturate(160%);
-            border: 1px solid rgba(43, 50, 69, 0.5);
-        }
-        .glass-strong {
-            background: rgba(12, 14, 20, 0.88);
-            backdrop-filter: blur(40px) saturate(180%);
-            -webkit-backdrop-filter: blur(40px) saturate(180%);
-        }
-
-        /* Glow utilities */
-        .text-glow {
-            text-shadow: 0 0 30px rgba(94, 234, 212, 0.25), 0 0 80px rgba(94, 234, 212, 0.08);
-        }
-        .text-glow-mint {
-            text-shadow: 0 0 30px rgba(52, 211, 153, 0.25);
-        }
-        .box-glow {
-            box-shadow: 0 0 40px rgba(94, 234, 212, 0.06), 0 0 80px rgba(94, 234, 212, 0.03);
-        }
-        .box-glow-strong {
-            box-shadow: 0 0 60px rgba(94, 234, 212, 0.1), 0 8px 32px rgba(0, 0, 0, 0.35);
-        }
-
-        /* Card system */
-        .card {
-            background: linear-gradient(145deg, rgba(25, 29, 41, 0.75), rgba(18, 21, 30, 0.6));
-            border: 1px solid rgba(43, 50, 69, 0.45);
-            border-radius: 16px;
-            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-            position: relative;
-            overflow: hidden;
-        }
-        .card::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            border-radius: inherit;
-            opacity: 0;
-            transition: opacity 0.5s;
-            background: linear-gradient(145deg, rgba(94, 234, 212, 0.025), transparent 60%);
-        }
-        .card:hover {
-            border-color: rgba(94, 234, 212, 0.2);
-            transform: translateY(-6px);
-            box-shadow: 0 20px 60px rgba(94, 234, 212, 0.05), 0 4px 20px rgba(0, 0, 0, 0.25);
-        }
-        .card:hover::after { opacity: 1; }
-
-        /* Gradient divider */
-        .divider {
-            height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(94, 234, 212, 0.1), transparent);
-        }
-
-        /* Performance bars */
-        .perf-fill {
-            transform-origin: left;
-            transform: scaleX(0);
-            transition: transform 1.4s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .perf-fill.animate { transform: scaleX(1); }
-
-        /* Cursor blink */
-        .caret::after {
-            content: '';
-            display: inline-block;
-            width: 10px;
-            height: 20px;
-            background: #5eead4;
-            margin-left: 2px;
-            vertical-align: text-bottom;
-            animation: blink-caret 1s step-end infinite;
-        }
-
-        /* TOC sidebar */
-        .toc-link {
-            position: relative;
-            padding-left: 16px;
-            transition: all 0.3s;
-        }
-        .toc-link::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 3px;
-            height: 0;
-            background: #5eead4;
-            border-radius: 2px;
-            transition: height 0.3s;
-        }
-        .toc-link:hover, .toc-link.active {
-            color: #5eead4;
-        }
-        .toc-link:hover::before, .toc-link.active::before {
-            height: 16px;
-        }
-
-        /* Noise texture overlay */
-        .noise::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            opacity: 0.015;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-            pointer-events: none;
-            z-index: 9999;
-        }
-
-        /* Reading prose */
-        .prose-reading {
-            font-size: 1rem;
-            line-height: 1.85;
-            letter-spacing: 0.015em;
-            color: #949db4;
-        }
-        .prose-reading strong {
-            color: #e0e4ed;
-            font-weight: 600;
-        }
-
-        /* Horizontal scroll snap for mobile cards */
-        .snap-scroll {
-            scroll-snap-type: x mandatory;
-            -webkit-overflow-scrolling: touch;
-        }
-        .snap-scroll > * {
-            scroll-snap-align: start;
-        }
-
-        /* Progress indicator at top */
-        #reading-progress {
+        /* Ambient Background */
+        .ambient-glow {
             position: fixed;
             top: 0;
             left: 0;
-            height: 2px;
-            background: linear-gradient(90deg, #5eead4, #34d399);
-            z-index: 100;
-            transition: width 0.1s;
-            box-shadow: 0 0 8px rgba(94, 234, 212, 0.35);
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 80% 80%, rgba(168, 85, 247, 0.05) 0%, transparent 40%);
+            pointer-events: none;
+            z-index: -1;
         }
 
-        /* Screenshot hover zoom */
-        .screenshot-wrap img {
-            transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .screenshot-wrap:hover img {
-            transform: scale(1.02);
-        }
-
-        /* Metric counter */
-        .metric-num {
-            font-variant-numeric: tabular-nums;
+        /* Glassmorphism */
+        .glass {
+            background: rgba(18, 18, 20, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
 
-        /* Orbit ring */
-        .orbit-ring {
-            border: 1px solid rgba(94, 234, 212, 0.05);
-            border-radius: 50%;
-            position: absolute;
+        .glass-hover:hover {
+            background: rgba(255, 255, 255, 0.03);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        /* Back to top */
-        #backToTop {
+        /* Typography */
+        .text-gradient {
+            background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.5) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .text-brand-gradient {
+            background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Animations */
+        .reveal {
             opacity: 0;
             transform: translateY(20px);
-            transition: all 0.4s;
-            pointer-events: none;
+            transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        #backToTop.show {
+
+        .reveal.active {
             opacity: 1;
             transform: translateY(0);
-            pointer-events: all;
+        }
+
+        .stagger-1 { transition-delay: 0.1s; }
+        .stagger-2 { transition-delay: 0.2s; }
+        .stagger-3 { transition-delay: 0.3s; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0A0A0B; }
+        ::-webkit-scrollbar-thumb { background: #27272A; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3F3F46; }
+
+        /* Button Shine */
+        .btn-shine {
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-shine::after {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .btn-shine:hover::after {
+            opacity: 1;
+        }
+
+        /* Premium Bento */
+        .bento-card {
+            border-radius: 24px;
+            padding: 2.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Software Shadow */
+        .software-shadow {
+            box-shadow: 
+                0 0 0 1px rgba(255,255,255,0.05),
+                0 20px 50px -12px rgba(0,0,0,0.5),
+                0 0 100px -20px rgba(59, 130, 246, 0.2);
         }
     </style>
 </head>
-<body class="noise">
+<body>
 
-    <!-- Reading progress -->
-    <div id="reading-progress" style="width: 0%"></div>
+<div class="ambient-glow"></div>
 
-    <!-- Navigation -->
-    <nav class="fixed top-0 left-0 right-0 z-50 glass-strong border-b border-ink-600/30 transition-all duration-500" id="mainNav">
-        <div class="max-w-7xl mx-auto px-5 sm:px-8">
-            <div class="flex items-center justify-between h-[60px]">
-                <!-- Logo -->
-                <a href="#" class="flex items-center gap-2.5 group">
-                    <div class="relative w-8 h-8">
-                        <div class="absolute inset-0 rounded-lg bg-cyan-glow/10 group-hover:bg-cyan-glow/20 transition-colors"></div>
-                        <div class="absolute inset-[1px] rounded-[7px] bg-ink-900 flex items-center justify-center border border-cyan-glow/20 group-hover:border-cyan-glow/40 transition-colors">
-                            <span class="font-mono text-cyan-glow text-sm font-bold leading-none">W</span>
-                        </div>
+<!-- Nav -->
+<nav class="fixed top-0 inset-x-0 z-50 px-6 py-4">
+    <div class="max-w-7xl mx-auto flex items-center justify-between glass px-6 py-3 rounded-full">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-brand-primary flex items-center justify-center font-bold text-white shadow-lg">W</div>
+            <span class="font-bold text-lg tracking-tight">WindTerm</span>
+        </div>
+        <div class="hidden md:flex items-center gap-8 text-sm font-medium text-brand-muted">
+            <a href="#features" class="hover:text-white transition-colors">功能特性</a>
+            <a href="#performance" class="hover:text-white transition-colors">性能基准</a>
+            <a href="#download" class="hover:text-white transition-colors">立即下载</a>
+            <a href="https://github.com/kingToolbox/WindTerm" target="_blank" class="hover:text-white transition-colors">GitHub</a>
+        </div>
+        <a href="#download" class="bg-white text-black px-5 py-2 rounded-full text-sm font-bold btn-shine">开始体验</a>
+    </div>
+</nav>
+
+<!-- Hero -->
+<section class="relative pt-44 pb-32 px-6">
+    <div class="max-w-5xl mx-auto text-center">
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass mb-8 reveal">
+            <span class="relative flex h-2 w-2">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-primary opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-brand-primary"></span>
+            </span>
+            <span class="text-xs font-semibold uppercase tracking-wider text-brand-muted">Version 2.7.0 — 稳定版已就绪</span>
+        </div>
+        
+        <h1 class="text-6xl md:text-8xl font-extrabold tracking-tight mb-8 reveal stagger-1">
+            <span class="text-gradient">更轻，更强</span><br>
+            <span class="text-brand-gradient">为效率而生的终端</span>
+        </h1>
+        
+        <p class="text-lg md:text-xl text-brand-muted max-w-2xl mx-auto mb-12 reveal stagger-2">
+            WindTerm 不仅仅是一个 SSH 客户端。它是一个高性能、低延迟的 DevOps 工作台，将复杂的协议管理转化为优雅的操作体验。
+        </p>
+        
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 reveal stagger-3">
+            <a href="#download" class="w-full sm:w-auto bg-brand-primary hover:bg-blue-600 px-10 py-4 rounded-2xl font-bold text-lg transition-all shadow-xl shadow-blue-500/20">免费下载</a>
+            <a href="https://github.com/kingToolbox/WindTerm" class="w-full sm:w-auto glass hover:bg-white/5 px-10 py-4 rounded-2xl font-bold text-lg transition-all">查看源码</a>
+        </div>
+    </div>
+
+    <!-- Product Shot -->
+    <div class="mt-24 max-w-6xl mx-auto reveal stagger-3 px-4">
+        <div class="rounded-3xl glass p-2 software-shadow">
+            <div class="rounded-2xl overflow-hidden bg-brand-base aspect-[16/9] relative group">
+                <img src="https://raw.githubusercontent.com/kingToolbox/WindTerm/master/images/screenshots/WindTerm.png" alt="WindTerm Dashboard" class="w-full h-full object-cover opacity-90 transition-transform duration-700 group-hover:scale-[1.02]">
+                <div class="absolute inset-0 bg-gradient-to-t from-brand-base/80 via-transparent to-transparent"></div>
+                <div class="absolute bottom-8 left-8 text-left">
+                    <div class="flex gap-2 mb-4">
+                        <span class="px-3 py-1 rounded-full glass text-[10px] font-bold uppercase tracking-widest">SSH v2</span>
+                        <span class="px-3 py-1 rounded-full glass text-[10px] font-bold uppercase tracking-widest">SFTP</span>
+                        <span class="px-3 py-1 rounded-full glass text-[10px] font-bold uppercase tracking-widest">Serial</span>
                     </div>
-                    <span class="font-display font-bold text-[1.1rem] tracking-tight text-ink-50">Wind<span class="text-cyan-glow">Term</span></span>
-                </a>
-
-                <!-- Desktop links -->
-                <div class="hidden lg:flex items-center gap-1">
-                    <a href="#features" class="toc-link px-3 py-2 text-[0.82rem] text-ink-200 font-body font-medium rounded-lg hover:bg-ink-700/30 transition-all">功能特性</a>
-                    <a href="#performance" class="toc-link px-3 py-2 text-[0.82rem] text-ink-200 font-body font-medium rounded-lg hover:bg-ink-700/30 transition-all">性能测试</a>
-                    <a href="#screenshots" class="toc-link px-3 py-2 text-[0.82rem] text-ink-200 font-body font-medium rounded-lg hover:bg-ink-700/30 transition-all">界面预览</a>
-                    <a href="#roadmap" class="toc-link px-3 py-2 text-[0.82rem] text-ink-200 font-body font-medium rounded-lg hover:bg-ink-700/30 transition-all">路线图</a>
-                    <a href="#community" class="toc-link px-3 py-2 text-[0.82rem] text-ink-200 font-body font-medium rounded-lg hover:bg-ink-700/30 transition-all">社区</a>
-                    <div class="w-px h-5 bg-ink-600/50 mx-2"></div>
-                    <a href="https://github.com/kingToolbox/WindTerm" target="_blank" class="px-3 py-2 text-[0.82rem] text-ink-300 hover:text-ink-100 transition-colors">
-                        <i class="fab fa-github text-base"></i>
-                    </a>
-                    <a href="https://github.com/kingToolbox/WindTerm/releases" target="_blank"
-                       class="ml-1 px-5 py-2 text-[0.82rem] font-display font-semibold text-ink-950 bg-cyan-glow rounded-xl hover:shadow-[0_0_30px_rgba(94,234,212,0.3)] transition-all duration-300 hover:-translate-y-0.5">
-                        <i class="fas fa-download mr-1.5 text-xs"></i>免费下载
-                    </a>
                 </div>
-
-                <!-- Mobile toggle -->
-                <button id="mobileToggle" class="lg:hidden w-10 h-10 flex items-center justify-center text-ink-200 hover:text-cyan-glow transition-colors rounded-xl hover:bg-ink-700/30">
-                    <i class="fas fa-bars text-lg" id="menuIcon"></i>
-                </button>
             </div>
         </div>
+    </div>
+</section>
 
-        <!-- Mobile menu -->
-        <div id="mobileMenu" class="hidden lg:hidden border-t border-ink-600/30">
-            <div class="px-5 py-5 flex flex-col gap-1 max-h-[70vh] overflow-y-auto">
-                <a href="#features"     class="px-4 py-3 text-sm text-ink-200 hover:text-cyan-glow hover:bg-ink-700/30 rounded-xl transition-all font-body">功能特性</a>
-                <a href="#performance"  class="px-4 py-3 text-sm text-ink-200 hover:text-cyan-glow hover:bg-ink-700/30 rounded-xl transition-all font-body">性能测试</a>
-                <a href="#screenshots"  class="px-4 py-3 text-sm text-ink-200 hover:text-cyan-glow hover:bg-ink-700/30 rounded-xl transition-all font-body">界面预览</a>
-                <a href="#roadmap"      class="px-4 py-3 text-sm text-ink-200 hover:text-cyan-glow hover:bg-ink-700/30 rounded-xl transition-all font-body">路线图</a>
-                <a href="#community"    class="px-4 py-3 text-sm text-ink-200 hover:text-cyan-glow hover:bg-ink-700/30 rounded-xl transition-all font-body">社区</a>
-                <div class="divider my-2"></div>
-                <a href="https://github.com/kingToolbox/WindTerm/releases" target="_blank"
-                   class="px-4 py-3 text-sm text-center font-display font-semibold text-ink-950 bg-cyan-glow rounded-xl">
-                    <i class="fas fa-download mr-1.5"></i>免费下载
-                </a>
-            </div>
+<!-- Features Bento -->
+<section id="features" class="py-32 px-6">
+    <div class="max-w-7xl mx-auto">
+        <div class="mb-20">
+            <h2 class="text-4xl md:text-5xl font-bold tracking-tight mb-6">不仅是功能，<br><span class="text-brand-muted">更是艺术。</span></h2>
         </div>
-    </nav>
 
-    <!-- ===== HERO ===== -->
-    <section class="relative min-h-[100svh] flex items-center justify-center pt-16 overflow-hidden" id="hero">
-        <!-- Ambient orbs -->
-        <div class="absolute top-[15%] left-1/2 -translate-x-1/2 w-[700px] h-[500px] rounded-full bg-cyan-glow/[0.03] blur-[160px] pointer-events-none"></div>
-        <div class="absolute bottom-[10%] left-[10%] w-[350px] h-[350px] rounded-full bg-mint/[0.025] blur-[130px] pointer-events-none"></div>
-        <div class="absolute top-[30%] right-[5%] w-[250px] h-[250px] rounded-full bg-solar/[0.02] blur-[110px] pointer-events-none"></div>
-
-        <!-- Orbit rings -->
-        <div class="orbit-ring w-[280px] h-[280px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:block" style="animation: none;"></div>
-        <div class="orbit-ring w-[460px] h-[460px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:block"></div>
-
-        <!-- Floating particles -->
-        <div class="absolute inset-0 pointer-events-none overflow-hidden" id="heroParticles"></div>
-
-        <div class="relative z-10 max-w-4xl mx-auto px-5 sm:px-8 text-center">
-            <!-- Badge -->
-            <div class="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full glass mb-10"
-                 style="animation: fade-in 1s 0.2s both;">
-                <span class="relative flex h-2 w-2">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-mint opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-2 w-2 bg-mint"></span>
-                </span>
-                <span class="text-xs font-mono text-ink-200 tracking-wide">v2.7.0 预发布版 · 完全免费 · 开源</span>
-            </div>
-
-            <!-- Headline -->
-            <h1 class="font-display font-extrabold leading-[1.1] tracking-tight mb-7"
-                style="animation: fade-in-up 1s 0.4s both;">
-                <span class="block text-[2.5rem] sm:text-[3.5rem] md:text-[4.5rem] text-ink-50">为 DevOps 而生的</span>
-                <span class="block text-[2.5rem] sm:text-[3.5rem] md:text-[4.5rem] text-glow text-cyan-glow">超级终端</span>
-            </h1>
-
-            <!-- Sub copy -->
-            <p class="text-base sm:text-lg text-ink-200 max-w-xl mx-auto mb-8 font-body leading-relaxed"
-               style="animation: fade-in-up 1s 0.6s both;">
-                一款更快、更强大的 SSH / Telnet / Serial / Shell / SFTP 客户端<br class="hidden sm:block">
-                <span class="text-ink-300">跨平台 · 高性能 · 无限制免费使用</span>
-            </p>
-
-            <!-- Protocol ribbon -->
-            <div class="flex flex-wrap justify-center gap-2 mb-10"
-                 style="animation: fade-in-up 1s 0.7s both;">
-                <span class="px-3 py-1.5 rounded-lg text-[0.7rem] font-mono font-medium text-cyan-glow/90 bg-cyan-glow/[0.06] border border-cyan-glow/10 hover:border-cyan-glow/30 hover:bg-cyan-glow/[0.1] transition-all cursor-default">SSH v2</span>
-                <span class="px-3 py-1.5 rounded-lg text-[0.7rem] font-mono font-medium text-cyan-glow/90 bg-cyan-glow/[0.06] border border-cyan-glow/10 hover:border-cyan-glow/30 hover:bg-cyan-glow/[0.1] transition-all cursor-default">Telnet</span>
-                <span class="px-3 py-1.5 rounded-lg text-[0.7rem] font-mono font-medium text-cyan-glow/90 bg-cyan-glow/[0.06] border border-cyan-glow/10 hover:border-cyan-glow/30 hover:bg-cyan-glow/[0.1] transition-all cursor-default">SFTP / SCP</span>
-                <span class="px-3 py-1.5 rounded-lg text-[0.7rem] font-mono font-medium text-cyan-glow/90 bg-cyan-glow/[0.06] border border-cyan-glow/10 hover:border-cyan-glow/30 hover:bg-cyan-glow/[0.1] transition-all cursor-default">Serial</span>
-                <span class="px-3 py-1.5 rounded-lg text-[0.7rem] font-mono font-medium text-cyan-glow/90 bg-cyan-glow/[0.06] border border-cyan-glow/10 hover:border-cyan-glow/30 hover:bg-cyan-glow/[0.1] transition-all cursor-default">Shell</span>
-                <span class="px-3 py-1.5 rounded-lg text-[0.7rem] font-mono font-medium text-mint/90 bg-mint/[0.06] border border-mint/10 hover:border-mint/30 hover:bg-mint/[0.1] transition-all cursor-default">Tmux</span>
-            </div>
-
-            <!-- CTAs -->
-            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-14"
-                 style="animation: fade-in-up 1s 0.85s both;">
-                <a href="https://github.com/kingToolbox/WindTerm/releases" target="_blank"
-                   class="group relative px-8 py-3.5 bg-cyan-glow text-ink-950 font-display font-bold rounded-2xl transition-all duration-300 hover:shadow-[0_0_40px_rgba(94,234,212,0.3)] hover:-translate-y-1 text-sm">
-                    <i class="fas fa-download mr-2"></i>立即下载
-                    <span class="absolute inset-0 rounded-2xl bg-white/0 group-hover:bg-white/10 transition-colors"></span>
-                </a>
-                <a href="https://github.com/kingToolbox/WindTerm" target="_blank"
-                   class="px-8 py-3.5 border border-ink-500 text-ink-100 font-display font-medium rounded-2xl hover:border-ink-400 hover:bg-ink-700/20 transition-all text-sm flex items-center gap-2">
-                    <i class="fab fa-github"></i> 查看源码
-                </a>
-            </div>
-
-            <!-- Platforms -->
-            <div class="flex items-center justify-center gap-8 text-ink-400 mb-16"
-                 style="animation: fade-in 1s 1s both;">
-                <div class="flex items-center gap-2 hover:text-ink-200 transition-colors cursor-default">
-                    <i class="fab fa-windows text-lg"></i>
-                    <span class="font-mono text-xs">Windows</span>
-                </div>
-                <div class="flex items-center gap-2 hover:text-ink-200 transition-colors cursor-default">
-                    <i class="fab fa-apple text-lg"></i>
-                    <span class="font-mono text-xs">macOS</span>
-                </div>
-                <div class="flex items-center gap-2 hover:text-ink-200 transition-colors cursor-default">
-                    <i class="fab fa-linux text-lg"></i>
-                    <span class="font-mono text-xs">Linux</span>
-                </div>
-            </div>
-
-            <!-- Terminal preview -->
-            <div class="relative max-w-2xl mx-auto" style="animation: fade-in-up 1.2s 1.1s both;">
-                <div class="absolute -inset-3 bg-gradient-to-b from-cyan-glow/[0.06] via-transparent to-transparent rounded-3xl blur-2xl pointer-events-none"></div>
-                <div class="relative glass rounded-2xl overflow-hidden box-glow border-ink-500/30">
-                    <!-- Title bar -->
-                    <div class="flex items-center px-4 py-2.5 border-b border-ink-600/40 bg-ink-800/40">
-                        <div class="flex gap-2 mr-4">
-                            <div class="w-3 h-3 rounded-full bg-coral/60 hover:bg-coral transition-colors"></div>
-                            <div class="w-3 h-3 rounded-full bg-solar/60 hover:bg-solar transition-colors"></div>
-                            <div class="w-3 h-3 rounded-full bg-mint/60 hover:bg-mint transition-colors"></div>
-                        </div>
-                        <div class="flex-1 text-center">
-                            <span class="font-mono text-[0.7rem] text-ink-400">windterm — ssh user@prod-server</span>
-                        </div>
-                        <div class="w-16"></div>
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+            <!-- Large Card -->
+            <div class="md:col-span-8 glass bento-card glass-hover reveal">
+                <div>
+                    <div class="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-brand-primary mb-8">
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                     </div>
-                    <!-- Terminal body -->
-                    <div class="p-5 sm:p-6 font-mono text-[0.8rem] sm:text-[0.85rem] leading-[1.75] text-left min-h-[200px]">
-                        <div class="text-ink-400">Last login: Mon Mar  9 10:23:41 2026 from 192.168.1.100</div>
-                        <div class="mt-3 flex flex-wrap">
-                            <span class="text-mint font-medium">root@prod</span><span class="text-ink-400">:</span><span class="text-cyan-glow">~</span><span class="text-ink-400">$ </span>
-                            <span class="text-ink-100 ml-1">neofetch --off | head -4</span>
+                    <h3 class="text-3xl font-bold mb-4">多协议全能支持</h3>
+                    <p class="text-brand-muted max-w-md">从 SSH 到 Telnet，从 SFTP 到 Serial。WindTerm 为所有基础设施连接提供一致且安全的环境。</p>
+                </div>
+                <div class="mt-12 flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+                    <div class="px-6 py-3 rounded-xl glass shrink-0 font-mono text-sm">ProxyJump</div>
+                    <div class="px-6 py-3 rounded-xl glass shrink-0 font-mono text-sm">X11 Forward</div>
+                    <div class="px-6 py-3 rounded-xl glass shrink-0 font-mono text-sm">Port Forwarding</div>
+                </div>
+            </div>
+
+            <!-- Small Card -->
+            <div class="md:col-span-4 glass bento-card glass-hover reveal stagger-1">
+                <div>
+                    <div class="w-14 h-14 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-brand-secondary mb-8">
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    </div>
+                    <h3 class="text-3xl font-bold mb-4">极致性能</h3>
+                    <p class="text-brand-muted">内存占用比同类产品低 90%，千万级历史行数仅需 133MB。</p>
+                </div>
+            </div>
+
+            <!-- Small Card -->
+            <div class="md:col-span-4 glass bento-card glass-hover reveal stagger-2">
+                <h3 class="text-2xl font-bold mb-4">自动补全</h3>
+                <p class="text-brand-muted mb-8">智能命令提示与参数补全，让你的终端操作如丝般顺滑。</p>
+                <div class="h-24 bg-gradient-to-br from-blue-500/5 to-purple-500/5 rounded-xl border border-white/5"></div>
+            </div>
+
+            <!-- Large Card -->
+            <div class="md:col-span-8 glass bento-card glass-hover reveal stagger-3">
+                <div class="flex flex-col md:flex-row gap-12 items-center">
+                    <div class="flex-1">
+                        <h3 class="text-3xl font-bold mb-4">极速文件传输</h3>
+                        <p class="text-brand-muted">内置 SFTP 高速通道，传输速度可达 247MB/s，彻底告别缓慢的传统传输工具。</p>
+                    </div>
+                    <div class="flex-1 w-full grid grid-cols-2 gap-4 text-center">
+                        <div class="glass p-6 rounded-2xl">
+                            <div class="text-2xl font-bold text-brand-primary">247</div>
+                            <div class="text-[10px] text-brand-muted uppercase font-bold tracking-widest mt-1">MB/s Speed</div>
                         </div>
-                        <div class="text-ink-300 mt-1.5 pl-0">
-                            <div><span class="text-cyan-soft">OS:</span> Ubuntu 22.04.3 LTS x86_64</div>
-                            <div><span class="text-cyan-soft">Uptime:</span> 142 days, 7 hours</div>
-                            <div><span class="text-cyan-soft">CPU:</span> Intel Xeon E5-2680 v4 (28) @ 3.3GHz</div>
-                            <div><span class="text-cyan-soft">Memory:</span> 3842MiB / 65536MiB</div>
-                        </div>
-                        <div class="mt-3 flex flex-wrap">
-                            <span class="text-mint font-medium">root@prod</span><span class="text-ink-400">:</span><span class="text-cyan-glow">~</span><span class="text-ink-400">$ </span>
-                            <span class="text-solar ml-1">WindTerm v2.7.0 — 极速连接就绪 ✓</span>
-                        </div>
-                        <div class="mt-3 flex">
-                            <span class="text-mint font-medium">root@prod</span><span class="text-ink-400">:</span><span class="text-cyan-glow">~</span><span class="text-ink-400">$ </span>
-                            <span class="caret ml-1"></span>
+                        <div class="glass p-6 rounded-2xl">
+                            <div class="text-2xl font-bold text-brand-secondary">53%</div>
+                            <div class="text-[10px] text-brand-muted uppercase font-bold tracking-widest mt-1">Over FileZilla</div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
+</section>
 
-        <!-- Scroll cue -->
-        <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 text-ink-500" style="animation: fade-in 1s 2s both;">
-            <div class="w-5 h-8 rounded-full border border-ink-500/50 flex justify-center pt-1.5">
-                <div class="w-1 h-2 rounded-full bg-ink-400 animate-bounce"></div>
-            </div>
+<!-- Stats -->
+<section id="performance" class="py-32 px-6 relative border-y border-white/5">
+    <div class="max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-12 text-center">
+        <div class="reveal">
+            <div class="text-5xl font-extrabold mb-2">2.9ms</div>
+            <div class="text-xs font-bold uppercase tracking-widest text-brand-muted">平均键入延迟</div>
         </div>
-    </section>
-
-    <!-- ===== STATS BAR ===== -->
-    <section class="relative border-y border-ink-600/30">
-        <div class="absolute inset-0 bg-gradient-to-r from-cyan-glow/[0.018] via-transparent to-mint/[0.018]"></div>
-        <div class="max-w-7xl mx-auto px-5 sm:px-8 py-14 sm:py-16 relative">
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-10 sm:gap-12 reveal">
-                <div class="text-center group">
-                    <div class="font-display font-extrabold text-4xl sm:text-5xl text-cyan-glow text-glow metric-num mb-2 group-hover:scale-105 transition-transform">52.1</div>
-                    <div class="text-xs font-mono text-ink-300 tracking-wider uppercase">MB/s 数据吞吐</div>
-                    <div class="text-[0.7rem] text-ink-500 mt-1">Telnet 基准测试</div>
-                </div>
-                <div class="text-center group">
-                    <div class="font-display font-extrabold text-4xl sm:text-5xl text-mint text-glow-mint metric-num mb-2 group-hover:scale-105 transition-transform">247</div>
-                    <div class="text-xs font-mono text-ink-300 tracking-wider uppercase">MB/s SFTP 上传</div>
-                    <div class="text-[0.7rem] text-ink-500 mt-1">高速传输模式</div>
-                </div>
-                <div class="text-center group">
-                    <div class="font-display font-extrabold text-4xl sm:text-5xl text-solar metric-num mb-2 group-hover:scale-105 transition-transform">90<span class="text-3xl sm:text-4xl">%</span></div>
-                    <div class="text-xs font-mono text-ink-300 tracking-wider uppercase">内存压缩率</div>
-                    <div class="text-[0.7rem] text-ink-500 mt-1">动态内存压缩</div>
-                </div>
-                <div class="text-center group">
-                    <div class="font-display font-extrabold text-4xl sm:text-5xl text-ink-50 metric-num mb-2 group-hover:scale-105 transition-transform">2.9<span class="text-3xl sm:text-4xl">ms</span></div>
-                    <div class="text-xs font-mono text-ink-300 tracking-wider uppercase">输入延迟</div>
-                    <div class="text-[0.7rem] text-ink-500 mt-1">文本编辑器延迟</div>
-                </div>
-            </div>
+        <div class="reveal stagger-1">
+            <div class="text-5xl font-extrabold mb-2">133MB</div>
+            <div class="text-xs font-bold uppercase tracking-widest text-brand-muted">千万行内存占用</div>
         </div>
-    </section>
-
-    <!-- ===== FEATURES ===== -->
-    <section id="features" class="relative py-28 sm:py-36">
-        <!-- Ambient -->
-        <div class="absolute top-[20%] right-0 w-[500px] h-[500px] bg-cyan-glow/[0.02] rounded-full blur-[160px] pointer-events-none"></div>
-
-        <div class="max-w-7xl mx-auto px-5 sm:px-8">
-            <!-- Header -->
-            <div class="max-w-2xl mx-auto text-center mb-20 reveal">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-cyan-glow/[0.06] border border-cyan-glow/10 mb-5">
-                    <div class="w-1 h-1 rounded-full bg-cyan-glow"></div>
-                    <span class="font-mono text-[0.7rem] text-cyan-glow/90 tracking-widest uppercase font-medium">Features</span>
-                </div>
-                <h2 class="font-display font-bold text-3xl sm:text-4xl md:text-[2.75rem] text-ink-50 leading-tight mb-4">全方位终端解决方案</h2>
-                <p class="prose-reading">为专业开发者和运维工程师精心打造，覆盖 SSH 连接、文件传输、会话管理到安全防护的完整工作流</p>
-            </div>
-
-            <!-- Primary feature cards (large) -->
-            <div class="grid md:grid-cols-2 gap-5 mb-5">
-                <!-- SSH -->
-                <div class="card rounded-2xl p-7 sm:p-8 reveal">
-                    <div class="flex items-start gap-4 mb-5 relative z-10">
-                        <div class="w-12 h-12 rounded-xl bg-cyan-glow/[0.08] border border-cyan-glow/10 flex items-center justify-center flex-shrink-0">
-                            <i class="fas fa-lock text-cyan-glow text-lg"></i>
-                        </div>
-                        <div>
-                            <h3 class="font-display font-semibold text-lg text-ink-50 mb-1">SSH 全功能支持</h3>
-                            <span class="text-[0.7rem] font-mono text-cyan-glow/60 tracking-wider">核心协议</span>
-                        </div>
-                    </div>
-                    <div class="prose-reading text-sm space-y-1.5 relative z-10">
-                        <p>完整的 SSH v2 协议实现，支持密码、公钥、键盘交互和 GSSAPI 多种认证方式。内置 SSH Agent 和代理转发，X11 转发可直接运行远程 GUI 程序。</p>
-                        <div class="flex flex-wrap gap-1.5 pt-2">
-                            <span class="px-2 py-0.5 text-[0.65rem] font-mono bg-ink-700/50 text-ink-200 rounded">ProxyCommand</span>
-                            <span class="px-2 py-0.5 text-[0.65rem] font-mono bg-ink-700/50 text-ink-200 rounded">ProxyJump</span>
-                            <span class="px-2 py-0.5 text-[0.65rem] font-mono bg-ink-700/50 text-ink-200 rounded">ControlMaster</span>
-                            <span class="px-2 py-0.5 text-[0.65rem] font-mono bg-ink-700/50 text-ink-200 rounded">端口转发</span>
-                            <span class="px-2 py-0.5 text-[0.65rem] font-mono bg-ink-700/50 text-ink-200 rounded">X11</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- SFTP -->
-                <div class="card rounded-2xl p-7 sm:p-8 reveal reveal-delay-1">
-                    <div class="flex items-start gap-4 mb-5 relative z-10">
-                        <div class="w-12 h-12 rounded-xl bg-mint/[0.08] border border-mint/10 flex items-center justify-center flex-shrink-0">
-                            <i class="fas fa-rocket text-mint text-lg"></i>
-                        </div>
-                        <div>
-                            <h3 class="font-display font-semibold text-lg text-ink-50 mb-1">极速文件传输</h3>
-                            <span class="text-[0.7rem] font-mono text-mint/60 tracking-wider">SFTP / SCP</span>
-                        </div>
-                    </div>
-                    <div class="prose-reading text-sm space-y-1.5 relative z-10">
-                        <p>集成 SFTP/SCP 客户端和本地文件管理器，高速传输模式下上传速度可达 <strong>247 MB/s</strong>，远超 FileZilla 和 WinSCP。支持 XModem、YModem、ZModem 传统传输协议。</p>
-                        <div class="flex flex-wrap gap-1.5 pt-2">
-                            <span class="px-2 py-0.5 text-[0.65rem] font-mono bg-ink-700/50 text-ink-200 rounded">下载/上传</span>
-                            <span class="px-2 py-0.5 text-[0.65rem] font-mono bg-ink-700/50 text-ink-200 rounded">重命名</span>
-                            <span class="px-2 py-0.5 text-[0.65rem] font-mono bg-ink-700/50 text-ink-200 rounded">批量操作</span>
-                            <span class="px-2 py-0.5 text-[0.65rem] font-mono bg-ink-700/50 text-ink-200 rounded">断点续传</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Secondary feature cards (3-col) -->
-            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-5">
-                <div class="card rounded-2xl p-6 reveal reveal-delay-1">
-                    <div class="w-10 h-10 rounded-xl bg-solar/[0.08] border border-solar/10 flex items-center justify-center mb-4">
-                        <i class="fas fa-network-wired text-solar"></i>
-                    </div>
-                    <h3 class="font-display font-semibold text-[1.05rem] text-ink-50 mb-2">多协议接入</h3>
-                    <p class="text-sm text-ink-200 leading-relaxed">Telnet、Raw TCP、Serial 串口全覆盖，支持 HTTP/SOCKS5 代理和跳板机代理，满足各类网络环境需求</p>
-                </div>
-
-                <div class="card rounded-2xl p-6 reveal reveal-delay-2">
-                    <div class="w-10 h-10 rounded-xl bg-purple-500/[0.08] border border-purple-500/10 flex items-center justify-center mb-4">
-                        <i class="fas fa-terminal text-purple-400"></i>
-                    </div>
-                    <h3 class="font-display font-semibold text-[1.05rem] text-ink-50 mb-2">专业终端仿真</h3>
-                    <p class="text-sm text-ink-200 leading-relaxed">完整支持 vt100 至 vt520 以及 xterm-256-colors，Unicode 13、Emoji、真彩色、鼠标协议一应俱全</p>
-                </div>
-
-                <div class="card rounded-2xl p-6 reveal reveal-delay-3">
-                    <div class="w-10 h-10 rounded-xl bg-pink-500/[0.08] border border-pink-500/10 flex items-center justify-center mb-4">
-                        <i class="fas fa-code text-pink-400"></i>
-                    </div>
-                    <h3 class="font-display font-semibold text-[1.05rem] text-ink-50 mb-2">跨平台 Shell</h3>
-                    <p class="text-sm text-ink-200 leading-relaxed">Windows Cmd/PowerShell（含管理员），Linux/macOS 的 bash、zsh、PowerShell Core，原生 Tmux 集成</p>
-                </div>
-
-                <div class="card rounded-2xl p-6 reveal reveal-delay-2">
-                    <div class="w-10 h-10 rounded-xl bg-sky-500/[0.08] border border-sky-500/10 flex items-center justify-center mb-4">
-                        <i class="fas fa-palette text-sky-400"></i>
-                    </div>
-                    <h3 class="font-display font-semibold text-[1.05rem] text-ink-50 mb-2">现代化界面</h3>
-                    <p class="text-sm text-ink-200 leading-relaxed">智能自动补全、命令面板、分屏视图、多主题配色、Powerline 美化、Vim 键绑定的双模切换</p>
-                </div>
-
-                <div class="card rounded-2xl p-6 reveal reveal-delay-3">
-                    <div class="w-10 h-10 rounded-xl bg-orange-500/[0.08] border border-orange-500/10 flex items-center justify-center mb-4">
-                        <i class="fas fa-layer-group text-orange-400"></i>
-                    </div>
-                    <h3 class="font-display font-semibold text-[1.05rem] text-ink-50 mb-2">会话管理</h3>
-                    <p class="text-sm text-ink-200 leading-relaxed">会话树管理与对话框、自动/手动日志、重启恢复布局、同步输入到多个终端、启动时加载指定会话</p>
-                </div>
-
-                <div class="card rounded-2xl p-6 reveal reveal-delay-4">
-                    <div class="w-10 h-10 rounded-xl bg-emerald-500/[0.08] border border-emerald-500/10 flex items-center justify-center mb-4">
-                        <i class="fas fa-shield-halved text-emerald-400"></i>
-                    </div>
-                    <h3 class="font-display font-semibold text-[1.05rem] text-ink-50 mb-2">安全增强</h3>
-                    <p class="text-sm text-ink-200 leading-relaxed">增强的用户名密码保护机制、锁定屏幕、SSH Agent 代理、粘贴确认对话框，保障运维安全</p>
-                </div>
-            </div>
-
-            <!-- Feature highlights strip -->
-            <div class="reveal reveal-delay-3">
-                <div class="card rounded-2xl p-7 sm:p-8">
-                    <h3 class="font-display font-semibold text-lg text-ink-50 mb-6 flex items-center gap-3">
-                        <i class="fas fa-sparkles text-cyan-glow text-sm"></i> 更多亮点
-                    </h3>
-                    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-3">
-                        <div class="flex items-center gap-2.5 text-sm text-ink-200 hover:text-cyan-glow transition-colors group">
-                            <i class="fas fa-chevron-right text-[0.5rem] text-cyan-glow/40 group-hover:text-cyan-glow transition-colors"></i>自由输入模式
-                        </div>
-                        <div class="flex items-center gap-2.5 text-sm text-ink-200 hover:text-cyan-glow transition-colors group">
-                            <i class="fas fa-chevron-right text-[0.5rem] text-cyan-glow/40 group-hover:text-cyan-glow transition-colors"></i>专注模式
-                        </div>
-                        <div class="flex items-center gap-2.5 text-sm text-ink-200 hover:text-cyan-glow transition-colors group">
-                            <i class="fas fa-chevron-right text-[0.5rem] text-cyan-glow/40 group-hover:text-cyan-glow transition-colors"></i>命令发送器
-                        </div>
-                        <div class="flex items-center gap-2.5 text-sm text-ink-200 hover:text-cyan-glow transition-colors group">
-                            <i class="fas fa-chevron-right text-[0.5rem] text-cyan-glow/40 group-hover:text-cyan-glow transition-colors"></i>资源管理器面板
-                        </div>
-                        <div class="flex items-center gap-2.5 text-sm text-ink-200 hover:text-cyan-glow transition-colors group">
-                            <i class="fas fa-chevron-right text-[0.5rem] text-cyan-glow/40 group-hover:text-cyan-glow transition-colors"></i>快捷栏
-                        </div>
-                        <div class="flex items-center gap-2.5 text-sm text-ink-200 hover:text-cyan-glow transition-colors group">
-                            <i class="fas fa-chevron-right text-[0.5rem] text-cyan-glow/40 group-hover:text-cyan-glow transition-colors"></i>选中即复制
-                        </div>
-                        <div class="flex items-center gap-2.5 text-sm text-ink-200 hover:text-cyan-glow transition-colors group">
-                            <i class="fas fa-chevron-right text-[0.5rem] text-cyan-glow/40 group-hover:text-cyan-glow transition-colors"></i>在线搜索集成
-                        </div>
-                        <div class="flex items-center gap-2.5 text-sm text-ink-200 hover:text-cyan-glow transition-colors group">
-                            <i class="fas fa-chevron-right text-[0.5rem] text-cyan-glow/40 group-hover:text-cyan-glow transition-colors"></i>窗口透明度
-                        </div>
-                        <div class="flex items-center gap-2.5 text-sm text-ink-200 hover:text-cyan-glow transition-colors group">
-                            <i class="fas fa-chevron-right text-[0.5rem] text-cyan-glow/40 group-hover:text-cyan-glow transition-colors"></i>标签页颜色标记
-                        </div>
-                        <div class="flex items-center gap-2.5 text-sm text-ink-200 hover:text-cyan-glow transition-colors group">
-                            <i class="fas fa-chevron-right text-[0.5rem] text-cyan-glow/40 group-hover:text-cyan-glow transition-colors"></i>分隔符高亮
-                        </div>
-                        <div class="flex items-center gap-2.5 text-sm text-ink-200 hover:text-cyan-glow transition-colors group">
-                            <i class="fas fa-chevron-right text-[0.5rem] text-cyan-glow/40 group-hover:text-cyan-glow transition-colors"></i>多语言界面
-                        </div>
-                        <div class="flex items-center gap-2.5 text-sm text-ink-200 hover:text-cyan-glow transition-colors group">
-                            <i class="fas fa-chevron-right text-[0.5rem] text-cyan-glow/40 group-hover:text-cyan-glow transition-colors"></i>时间戳与大纲
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div class="reveal stagger-2">
+            <div class="text-5xl font-extrabold mb-2">∞</div>
+            <div class="text-xs font-bold uppercase tracking-widest text-brand-muted">无限回滚长度</div>
         </div>
-    </section>
-
-    <!-- ===== PERFORMANCE ===== -->
-    <section id="performance" class="relative py-28 sm:py-36">
-        <div class="divider"></div>
-        <div class="absolute bottom-[30%] left-0 w-[400px] h-[400px] bg-mint/[0.02] rounded-full blur-[150px] pointer-events-none"></div>
-
-        <div class="max-w-7xl mx-auto px-5 sm:px-8 pt-20">
-            <!-- Header -->
-            <div class="max-w-2xl mx-auto text-center mb-20 reveal">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-mint/[0.06] border border-mint/10 mb-5">
-                    <div class="w-1 h-1 rounded-full bg-mint"></div>
-                    <span class="font-mono text-[0.7rem] text-mint/90 tracking-widest uppercase font-medium">Benchmark</span>
-                </div>
-                <h2 class="font-display font-bold text-3xl sm:text-4xl md:text-[2.75rem] text-ink-50 leading-tight mb-4">实测数据说话</h2>
-                <p class="prose-reading">在 SFTP 传输、终端渲染和输入延迟三个关键维度，WindTerm 均展现出显著的性能优势</p>
-            </div>
-
-            <!-- SFTP Benchmark -->
-            <div class="mb-24 reveal">
-                <div class="flex items-center gap-4 mb-3">
-                    <div class="w-10 h-10 rounded-xl bg-cyan-glow/[0.08] border border-cyan-glow/10 flex items-center justify-center flex-shrink-0">
-                        <i class="fas fa-file-arrow-up text-cyan-glow"></i>
-                    </div>
-                    <div>
-                        <h3 class="font-display font-semibold text-xl text-ink-50">SFTP 传输速度</h3>
-                        <p class="text-[0.78rem] text-ink-400 font-mono">5GB 随机数据 · Windows 10 / WSL Ubuntu 18.04</p>
-                    </div>
-                </div>
-
-                <div class="card rounded-2xl p-6 sm:p-8 mt-5">
-                    <div class="space-y-6">
-                        <!-- WindTerm -->
-                        <div>
-                            <div class="flex items-baseline justify-between mb-2.5">
-                                <div class="flex items-center gap-2">
-                                    <span class="w-2 h-2 rounded-full bg-cyan-glow"></span>
-                                    <span class="text-sm font-display font-semibold text-ink-50">WindTerm 1.72</span>
-                                    <span class="text-[0.65rem] font-mono text-cyan-glow/70 bg-cyan-glow/[0.06] px-1.5 py-0.5 rounded">高速传输</span>
-                                </div>
-                                <span class="font-mono text-sm text-cyan-glow font-semibold">216.3 MB/s <span class="text-ink-400 font-normal">↓</span> · 247.0 MB/s <span class="text-ink-400 font-normal">↑</span></span>
-                            </div>
-                            <div class="h-3 bg-ink-700/50 rounded-full overflow-hidden">
-                                <div class="perf-fill h-full rounded-full bg-gradient-to-r from-cyan-glow/90 to-cyan-glow/60" style="width: 100%"></div>
-                            </div>
-                        </div>
-                        <!-- FileZilla -->
-                        <div>
-                            <div class="flex items-baseline justify-between mb-2.5">
-                                <div class="flex items-center gap-2">
-                                    <span class="w-2 h-2 rounded-full bg-ink-400"></span>
-                                    <span class="text-sm font-display text-ink-200">FileZilla</span>
-                                </div>
-                                <span class="font-mono text-sm text-ink-300">161.1 MB/s <span class="text-ink-500 font-normal">↓</span> · 171.8 MB/s <span class="text-ink-500 font-normal">↑</span></span>
-                            </div>
-                            <div class="h-3 bg-ink-700/50 rounded-full overflow-hidden">
-                                <div class="perf-fill h-full rounded-full bg-ink-400/50" style="width: 70%"></div>
-                            </div>
-                        </div>
-                        <!-- WinSCP -->
-                        <div>
-                            <div class="flex items-baseline justify-between mb-2.5">
-                                <div class="flex items-center gap-2">
-                                    <span class="w-2 h-2 rounded-full bg-ink-500"></span>
-                                    <span class="text-sm font-display text-ink-300">WinSCP</span>
-                                </div>
-                                <span class="font-mono text-sm text-ink-400">63.7 MB/s <span class="text-ink-500 font-normal">↓</span> · 56.7 MB/s <span class="text-ink-500 font-normal">↑</span></span>
-                            </div>
-                            <div class="h-3 bg-ink-700/50 rounded-full overflow-hidden">
-                                <div class="perf-fill h-full rounded-full bg-ink-500/40" style="width: 26%"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Terminal Rendering -->
-            <div class="mb-24 reveal">
-                <div class="flex items-center gap-4 mb-3">
-                    <div class="w-10 h-10 rounded-xl bg-mint/[0.08] border border-mint/10 flex items-center justify-center flex-shrink-0">
-                        <i class="fas fa-gauge-high text-mint"></i>
-                    </div>
-                    <div>
-                        <h3 class="font-display font-semibold text-xl text-ink-50">终端渲染基准</h3>
-                        <p class="text-[0.78rem] text-ink-400 font-mono">time seq 1 10000000 · 无限回滚行 · SSH</p>
-                    </div>
-                </div>
-
-                <div class="card rounded-2xl overflow-hidden mt-5">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm min-w-[600px]">
-                            <thead>
-                                <tr class="border-b border-ink-600/30">
-                                    <th class="text-left py-4 px-6 text-[0.7rem] font-mono text-ink-300 font-medium tracking-wider uppercase bg-ink-800/30">终端</th>
-                                    <th class="text-right py-4 px-6 text-[0.7rem] font-mono text-ink-300 font-medium tracking-wider uppercase bg-ink-800/30">耗时</th>
-                                    <th class="text-right py-4 px-6 text-[0.7rem] font-mono text-ink-300 font-medium tracking-wider uppercase bg-ink-800/30">内存占用</th>
-                                    <th class="text-center py-4 px-6 text-[0.7rem] font-mono text-ink-300 font-medium tracking-wider uppercase bg-ink-800/30 w-28">状态</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr class="border-b border-ink-600/20 bg-cyan-glow/[0.02]">
-                                    <td class="py-4 px-6 font-mono text-mint font-semibold flex items-center gap-2.5">
-                                        <i class="fas fa-trophy text-solar text-xs"></i> WindTerm
-                                    </td>
-                                    <td class="py-4 px-6 text-right font-mono text-cyan-glow font-semibold">10.674s</td>
-                                    <td class="py-4 px-6 text-right font-mono text-cyan-glow font-semibold">133.3 MB</td>
-                                    <td class="py-4 px-6 text-center"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-mint/10 text-mint text-[0.65rem] font-mono"><i class="fas fa-infinity text-[0.5rem]"></i> 无限回滚</span></td>
-                                </tr>
-                                <tr class="border-b border-ink-600/20 hover:bg-ink-700/20 transition-colors">
-                                    <td class="py-4 px-6 font-mono text-ink-200">Alacritty</td>
-                                    <td class="py-4 px-6 text-right font-mono text-ink-200">11.598s</td>
-                                    <td class="py-4 px-6 text-right font-mono text-ink-400 text-[0.78rem]">—</td>
-                                    <td class="py-4 px-6 text-center"><span class="text-[0.65rem] font-mono text-ink-400">限 100K 行</span></td>
-                                </tr>
-                                <tr class="border-b border-ink-600/20 hover:bg-ink-700/20 transition-colors">
-                                    <td class="py-4 px-6 font-mono text-ink-200">iTerm2</td>
-                                    <td class="py-4 px-6 text-right font-mono text-ink-200">20.468s</td>
-                                    <td class="py-4 px-6 text-right font-mono text-ink-200">2,231 MB</td>
-                                    <td class="py-4 px-6 text-center"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-solar/10 text-solar text-[0.65rem] font-mono"><i class="fas fa-infinity text-[0.5rem]"></i> 无限</span></td>
-                                </tr>
-                                <tr class="border-b border-ink-600/20 hover:bg-ink-700/20 transition-colors">
-                                    <td class="py-4 px-6 font-mono text-ink-300">Windows Terminal</td>
-                                    <td class="py-4 px-6 text-right font-mono text-ink-300">264.7s</td>
-                                    <td class="py-4 px-6 text-right font-mono text-ink-400 text-[0.78rem]">—</td>
-                                    <td class="py-4 px-6 text-center"><span class="text-[0.65rem] font-mono text-ink-400">限 65K 行</span></td>
-                                </tr>
-                                <tr class="hover:bg-ink-700/20 transition-colors">
-                                    <td class="py-4 px-6 font-mono text-ink-400">rxvt / putty / xterm / kitty</td>
-                                    <td class="py-4 px-6 text-right font-mono text-ink-500">—</td>
-                                    <td class="py-4 px-6 text-right font-mono text-coral/60">内存溢出</td>
-                                    <td class="py-4 px-6 text-center"><span class="text-[0.65rem] font-mono text-coral/50">OOM</span></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <p class="text-[0.75rem] text-ink-500 mt-4 font-mono text-center italic">* 千万行数据下 WindTerm 仅占 133MB 内存，同等条件其他终端均内存溢出崩溃</p>
-            </div>
-
-            <!-- Latency -->
-            <div class="reveal">
-                <div class="flex items-center gap-4 mb-3">
-                    <div class="w-10 h-10 rounded-xl bg-solar/[0.08] border border-solar/10 flex items-center justify-center flex-shrink-0">
-                        <i class="fas fa-bolt text-solar"></i>
-                    </div>
-                    <div>
-                        <h3 class="font-display font-semibold text-xl text-ink-50">输入延迟对比</h3>
-                        <p class="text-[0.78rem] text-ink-400 font-mono">WindEdit 文本组件键入延迟</p>
-                    </div>
-                </div>
-
-                <div class="grid sm:grid-cols-3 gap-5 mt-5">
-                    <div class="card rounded-2xl p-6 text-center group">
-                        <div class="font-display font-extrabold text-4xl text-cyan-glow text-glow metric-num mb-1 group-hover:scale-110 transition-transform">2.9</div>
-                        <div class="text-xs font-mono text-ink-300 mb-3">ms 平均延迟</div>
-                        <div class="font-mono text-sm text-cyan-glow font-medium">WindEdit</div>
-                        <div class="mt-3 text-[0.7rem] text-ink-500">最小 1.9ms · 最大 7.6ms</div>
-                    </div>
-                    <div class="card rounded-2xl p-6 text-center group">
-                        <div class="font-display font-extrabold text-4xl text-ink-300 metric-num mb-1 group-hover:scale-110 transition-transform">7.8</div>
-                        <div class="text-xs font-mono text-ink-400 mb-3">ms 平均延迟</div>
-                        <div class="font-mono text-sm text-ink-300">Windows 记事本</div>
-                        <div class="mt-3 text-[0.7rem] text-ink-500">最小 0.9ms · 最大 16.5ms</div>
-                    </div>
-                    <div class="card rounded-2xl p-6 text-center group">
-                        <div class="font-display font-extrabold text-4xl text-ink-300 metric-num mb-1 group-hover:scale-110 transition-transform">2.8</div>
-                        <div class="text-xs font-mono text-ink-400 mb-3">ms 平均延迟</div>
-                        <div class="font-mono text-sm text-ink-300">GVim</div>
-                        <div class="mt-3 text-[0.7rem] text-ink-500">最小 0.9ms · 最大 10.4ms</div>
-                    </div>
-                </div>
-            </div>
+        <div class="reveal stagger-3">
+            <div class="text-5xl font-extrabold mb-2">Zero</div>
+            <div class="text-xs font-bold uppercase tracking-widest text-brand-muted">崩溃记录</div>
         </div>
-    </section>
+    </div>
+</section>
 
-    <!-- ===== SCREENSHOTS ===== -->
-    <section id="screenshots" class="relative py-28 sm:py-36">
-        <div class="divider"></div>
-
-        <div class="max-w-7xl mx-auto px-5 sm:px-8 pt-20">
-            <div class="max-w-2xl mx-auto text-center mb-16 reveal">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-solar/[0.06] border border-solar/10 mb-5">
-                    <div class="w-1 h-1 rounded-full bg-solar"></div>
-                    <span class="font-mono text-[0.7rem] text-solar/90 tracking-widest uppercase font-medium">Screenshots</span>
-                </div>
-                <h2 class="font-display font-bold text-3xl sm:text-4xl md:text-[2.75rem] text-ink-50 leading-tight mb-4">界面预览</h2>
-                <p class="prose-reading">简洁优雅的现代化终端界面，支持多种主题与布局方案</p>
-            </div>
-
-            <!-- Main screenshot -->
-            <div class="reveal mb-8">
-                <div class="screenshot-wrap card rounded-2xl overflow-hidden cursor-pointer group">
-                    <div class="flex items-center justify-between px-5 py-3 border-b border-ink-600/30 bg-ink-800/30">
-                        <div class="flex items-center gap-3">
-                            <div class="flex gap-1.5">
-                                <div class="w-2.5 h-2.5 rounded-full bg-coral/50"></div>
-                                <div class="w-2.5 h-2.5 rounded-full bg-solar/50"></div>
-                                <div class="w-2.5 h-2.5 rounded-full bg-mint/50"></div>
-                            </div>
-                            <span class="font-mono text-[0.7rem] text-ink-400">主窗口 — zsh</span>
-                        </div>
-                        <span class="text-[0.65rem] text-ink-500 font-mono opacity-0 group-hover:opacity-100 transition-opacity">
-                            <i class="fas fa-expand mr-1"></i>查看大图
-                        </span>
-                    </div>
-                    <div class="overflow-hidden">
-                        <img src="https://raw.githubusercontent.com/kingToolbox/WindTerm/master/images/screenshots/WindTerm.png"
-                             alt="WindTerm 主窗口" class="w-full block" loading="lazy">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Secondary screenshots -->
-            <div class="grid md:grid-cols-2 gap-6">
-                <div class="reveal reveal-delay-1">
-                    <div class="screenshot-wrap card rounded-2xl overflow-hidden cursor-pointer group">
-                        <div class="flex items-center justify-between px-5 py-3 border-b border-ink-600/30 bg-ink-800/30">
-                            <div class="flex items-center gap-3">
-                                <div class="flex gap-1.5">
-                                    <div class="w-2.5 h-2.5 rounded-full bg-coral/50"></div>
-                                    <div class="w-2.5 h-2.5 rounded-full bg-solar/50"></div>
-                                    <div class="w-2.5 h-2.5 rounded-full bg-mint/50"></div>
-                                </div>
-                                <span class="font-mono text-[0.7rem] text-ink-400">分屏视图</span>
-                            </div>
-                        </div>
-                        <div class="overflow-hidden">
-                            <img src="https://raw.githubusercontent.com/kingToolbox/WindTerm/master/images/screenshots/SplitView.png"
-                                 alt="分屏视图" class="w-full block" loading="lazy">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="reveal reveal-delay-2">
-                    <div class="screenshot-wrap card rounded-2xl overflow-hidden cursor-pointer group">
-                        <div class="flex items-center justify-between px-5 py-3 border-b border-ink-600/30 bg-ink-800/30">
-                            <div class="flex items-center gap-3">
-                                <div class="flex gap-1.5">
-                                    <div class="w-2.5 h-2.5 rounded-full bg-coral/50"></div>
-                                    <div class="w-2.5 h-2.5 rounded-full bg-solar/50"></div>
-                                    <div class="w-2.5 h-2.5 rounded-full bg-mint/50"></div>
-                                </div>
-                                <span class="font-mono text-[0.7rem] text-ink-400">DigeWhite 亮色主题</span>
-                            </div>
-                        </div>
-                        <div class="overflow-hidden">
-                            <img src="https://raw.githubusercontent.com/kingToolbox/WindTerm/master/images/screenshots/WindTerm_DigeWhite_Theme.png"
-                                 alt="DigeWhite 主题" class="w-full block" loading="lazy">
-                        </div>
-                    </div>
-                </div>
-            </div>
+<!-- CTA -->
+<section id="download" class="py-44 px-6 text-center overflow-hidden relative">
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-brand-primary/10 rounded-full blur-[120px] pointer-events-none"></div>
+    <div class="max-w-3xl mx-auto relative z-10">
+        <h2 class="text-5xl md:text-7xl font-bold tracking-tight mb-8 reveal">立即开始您的<br><span class="text-brand-gradient">专业 DevOps 之旅</span></h2>
+        <p class="text-xl text-brand-muted mb-12 reveal stagger-1">完全免费且无限制的使用体验。支持 Windows、macOS 与 Linux。</p>
+        <div class="grid sm:grid-cols-3 gap-4 max-w-2xl mx-auto reveal stagger-2">
+            <a href="https://github.com/kingToolbox/WindTerm/releases" target="_blank" class="glass glass-hover p-8 rounded-3xl flex flex-col items-center gap-4">
+                <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/></svg>
+                <span class="font-bold">Windows</span>
+            </a>
+            <a href="https://github.com/kingToolbox/WindTerm/releases" target="_blank" class="glass glass-hover p-8 rounded-3xl flex flex-col items-center gap-4">
+                <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+                <span class="font-bold">macOS</span>
+            </a>
+            <a href="https://github.com/kingToolbox/WindTerm/releases" target="_blank" class="glass glass-hover p-8 rounded-3xl flex flex-col items-center gap-4">
+                <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489a.424.424 0 00-.11.135c-.26.268-.45.6-.663.839-.199.199-.485.267-.797.4-.313.136-.658.269-.864.68-.09.189-.136.394-.132.602 0 .199.027.4.055.536.058.399.116.728.04.97-.249.68-.28 1.145-.106 1.484.174.334.535.47.94.601.81.2 1.91.135 2.774.6.926.466 1.866.67 2.616.47.526-.116.97-.464 1.208-.946.587-.003 1.23-.269 2.26-.334.699-.058 1.574.267 2.577.2.025.134.063.198.114.333l.003.003c.391.778 1.113 1.132 1.884 1.071.771-.06 1.592-.536 2.257-1.306.631-.765 1.683-1.084 2.378-1.503.348-.199.629-.469.649-.853.023-.4-.2-.811-.714-1.376v-.097l-.003-.003c-.17-.2-.25-.535-.338-.926-.085-.401-.182-.786-.492-1.046h-.003c-.059-.054-.123-.067-.188-.135a.357.357 0 00-.19-.064c.431-1.278.264-2.55-.173-3.694-.533-1.41-1.465-2.638-2.175-3.483-.796-1.005-1.576-1.957-1.56-3.368.026-2.152.236-6.133-3.544-6.139z"/></svg>
+                <span class="font-bold">Linux</span>
+            </a>
         </div>
-    </section>
+    </div>
+</section>
 
-    <!-- ===== DOWNLOAD ===== -->
-    <section class="relative py-28 sm:py-36">
-        <div class="divider"></div>
-        <div class="absolute inset-0 bg-gradient-to-b from-cyan-glow/[0.02] via-transparent to-transparent pointer-events-none"></div>
-
-        <div class="max-w-4xl mx-auto px-5 sm:px-8 text-center pt-20">
-            <div class="reveal">
-                <h2 class="font-display font-bold text-3xl sm:text-4xl md:text-[2.75rem] text-ink-50 leading-tight mb-4">立即开始使用</h2>
-                <p class="prose-reading max-w-lg mx-auto mb-3">完全免费，可用于商业和非商业用途，无任何限制</p>
-                <p class="text-[0.78rem] text-ink-400 font-mono mb-14">所有源代码基于 Apache-2.0 许可证开放</p>
-            </div>
-
-            <div class="grid sm:grid-cols-3 gap-5 mb-14 reveal">
-                <a href="https://github.com/kingToolbox/WindTerm/releases" target="_blank"
-                   class="card rounded-2xl p-7 text-center group hover:border-cyan-glow/30 cursor-pointer">
-                    <div class="relative z-10">
-                        <i class="fab fa-windows text-4xl text-ink-400 group-hover:text-cyan-glow transition-colors duration-300 mb-4 block"></i>
-                        <div class="font-display font-bold text-lg text-ink-50 mb-1">Windows</div>
-                        <div class="text-[0.7rem] text-ink-400 font-mono">x64 / x86</div>
-                    </div>
-                </a>
-                <a href="https://github.com/kingToolbox/WindTerm/releases" target="_blank"
-                   class="card rounded-2xl p-7 text-center group hover:border-cyan-glow/30 cursor-pointer">
-                    <div class="relative z-10">
-                        <i class="fab fa-apple text-4xl text-ink-400 group-hover:text-cyan-glow transition-colors duration-300 mb-4 block"></i>
-                        <div class="font-display font-bold text-lg text-ink-50 mb-1">macOS</div>
-                        <div class="text-[0.7rem] text-ink-400 font-mono">Universal Binary</div>
-                    </div>
-                </a>
-                <a href="https://github.com/kingToolbox/WindTerm/releases" target="_blank"
-                   class="card rounded-2xl p-7 text-center group hover:border-cyan-glow/30 cursor-pointer">
-                    <div class="relative z-10">
-                        <i class="fab fa-linux text-4xl text-ink-400 group-hover:text-cyan-glow transition-colors duration-300 mb-4 block"></i>
-                        <div class="font-display font-bold text-lg text-ink-50 mb-1">Linux</div>
-                        <div class="text-[0.7rem] text-ink-400 font-mono">x86_64</div>
-                    </div>
-                </a>
-            </div>
-
-            <div class="reveal">
-                <a href="https://github.com/kingToolbox/WindTerm/releases" target="_blank"
-                   class="inline-flex items-center gap-2 text-sm text-ink-300 hover:text-cyan-glow transition-colors font-mono group">
-                    前往 GitHub Releases 查看所有版本
-                    <i class="fas fa-arrow-right text-xs group-hover:translate-x-1 transition-transform"></i>
-                </a>
-            </div>
+<!-- Footer -->
+<footer class="py-20 px-6 border-t border-white/5">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+        <div class="flex items-center gap-2">
+            <div class="w-6 h-6 rounded bg-brand-primary flex items-center justify-center font-bold text-white text-[10px]">W</div>
+            <span class="font-bold text-sm">WindTerm</span>
         </div>
-    </section>
-
-    <!-- ===== ROADMAP ===== -->
-    <section id="roadmap" class="relative py-28 sm:py-36">
-        <div class="divider"></div>
-
-        <div class="max-w-5xl mx-auto px-5 sm:px-8 pt-20">
-            <div class="max-w-2xl mx-auto text-center mb-20 reveal">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-purple-500/[0.06] border border-purple-500/10 mb-5">
-                    <div class="w-1 h-1 rounded-full bg-purple-400"></div>
-                    <span class="font-mono text-[0.7rem] text-purple-400/90 tracking-widest uppercase font-medium">Roadmap</span>
-                </div>
-                <h2 class="font-display font-bold text-3xl sm:text-4xl md:text-[2.75rem] text-ink-50 leading-tight mb-4">开发路线图</h2>
-                <p class="prose-reading">从基础框架到全自动化运维，WindTerm 正在稳步前进</p>
-                <p class="text-sm text-ink-400 mt-2">发布周期 2-3 个月 · 预发布周期 4~6 周</p>
-            </div>
-
-            <!-- Timeline -->
-            <div class="relative reveal">
-                <!-- Center line -->
-                <div class="absolute left-6 md:left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-ink-600/50 via-cyan-glow/20 to-ink-600/50 md:-translate-x-px"></div>
-
-                <!-- v0.x -->
-                <div class="relative flex mb-16 md:mb-20">
-                    <div class="hidden md:block md:w-1/2 md:pr-14 md:text-right pt-1">
-                        <h4 class="font-display font-semibold text-ink-300 text-lg">v0.x <span class="text-ink-500 font-normal">· 基础</span></h4>
-                        <p class="text-sm text-ink-400 mt-2 leading-relaxed">基础框架和核心功能搭建，完成高性能文本编辑器 WindEdit 作为终端底层组件</p>
-                        <div class="font-mono text-[0.7rem] text-ink-500 mt-2">~2020 年春</div>
-                    </div>
-                    <div class="absolute left-6 md:left-1/2 -translate-x-1/2 z-10 mt-1">
-                        <div class="w-3 h-3 rounded-full border-2 border-ink-400 bg-ink-900"></div>
-                    </div>
-                    <div class="pl-16 md:pl-14 md:w-1/2">
-                        <div class="md:hidden">
-                            <h4 class="font-display font-semibold text-ink-300">v0.x · 基础</h4>
-                            <p class="text-sm text-ink-400 mt-1">基础框架搭建，完成 WindEdit</p>
-                        </div>
-                        <span class="inline-block mt-2 md:mt-1 px-2.5 py-1 text-[0.65rem] font-mono bg-ink-700/30 text-ink-400 rounded-lg border border-ink-600/30">已完成</span>
-                    </div>
-                </div>
-
-                <!-- v1.x -->
-                <div class="relative flex mb-16 md:mb-20">
-                    <div class="hidden md:block md:w-1/2 md:pr-14 md:text-right pt-1">
-                        <span class="inline-block px-2.5 py-1 text-[0.65rem] font-mono bg-ink-700/30 text-ink-400 rounded-lg border border-ink-600/30">已完成</span>
-                    </div>
-                    <div class="absolute left-6 md:left-1/2 -translate-x-1/2 z-10 mt-1">
-                        <div class="w-3 h-3 rounded-full border-2 border-ink-400 bg-ink-900"></div>
-                    </div>
-                    <div class="pl-16 md:pl-14 md:w-1/2 pt-1">
-                        <h4 class="font-display font-semibold text-ink-300 text-lg">v1.x <span class="text-ink-500 font-normal">· 手动</span></h4>
-                        <p class="text-sm text-ink-400 mt-2 leading-relaxed">完善所有核心功能，使大多数开发者可在日常工作中正常使用</p>
-                        <div class="font-mono text-[0.7rem] text-ink-500 mt-2">2020 年春 ~ 2020 年冬</div>
-                        <span class="md:hidden inline-block mt-2 px-2.5 py-1 text-[0.65rem] font-mono bg-ink-700/30 text-ink-400 rounded-lg border border-ink-600/30">已完成</span>
-                    </div>
-                </div>
-
-                <!-- v2.x (active) -->
-                <div class="relative flex mb-16 md:mb-20">
-                    <div class="hidden md:block md:w-1/2 md:pr-14 md:text-right pt-1">
-                        <h4 class="font-display font-bold text-cyan-glow text-lg">v2.x <span class="text-cyan-glow/60 font-normal">· 半自动</span></h4>
-                        <p class="text-sm text-ink-200 mt-2 leading-relaxed">通过触发器、宏、事件和通知系统，辅助开发者半自动化完成运维操作</p>
-                        <div class="mt-3 flex flex-wrap justify-end gap-1.5">
-                            <span class="px-2 py-0.5 text-[0.6rem] font-mono bg-cyan-glow/[0.06] text-cyan-glow/80 rounded border border-cyan-glow/10">SSH 代理转发</span>
-                            <span class="px-2 py-0.5 text-[0.6rem] font-mono bg-cyan-glow/[0.06] text-cyan-glow/80 rounded border border-cyan-glow/10">Tmux 集成</span>
-                            <span class="px-2 py-0.5 text-[0.6rem] font-mono bg-cyan-glow/[0.06] text-cyan-glow/80 rounded border border-cyan-glow/10">外部工具</span>
-                            <span class="px-2 py-0.5 text-[0.6rem] font-mono bg-cyan-glow/[0.06] text-cyan-glow/80 rounded border border-cyan-glow/10">Mosh</span>
-                            <span class="px-2 py-0.5 text-[0.6rem] font-mono bg-cyan-glow/[0.06] text-cyan-glow/80 rounded border border-cyan-glow/10">插件系统</span>
-                        </div>
-                        <div class="font-mono text-[0.7rem] text-cyan-glow/50 mt-3">2021 年春 ~ 进行中</div>
-                    </div>
-                    <div class="absolute left-6 md:left-1/2 -translate-x-1/2 z-10 mt-1">
-                        <div class="relative">
-                            <div class="absolute -inset-2 rounded-full bg-cyan-glow/15 animate-ping"></div>
-                            <div class="relative w-3 h-3 rounded-full bg-cyan-glow shadow-[0_0_12px_rgba(94,234,212,0.5)]"></div>
-                        </div>
-                    </div>
-                    <div class="pl-16 md:pl-14 md:w-1/2 pt-1">
-                        <div class="md:hidden">
-                            <h4 class="font-display font-bold text-cyan-glow">v2.x · 半自动</h4>
-                            <p class="text-sm text-ink-200 mt-1">触发器、宏、事件、通知系统</p>
-                        </div>
-                        <span class="inline-block mt-2 md:mt-1 px-2.5 py-1 text-[0.65rem] font-mono bg-cyan-glow/10 text-cyan-glow rounded-lg border border-cyan-glow/20">
-                            <i class="fas fa-circle-notch fa-spin mr-1 text-[0.5rem]"></i>开发中
-                        </span>
-                    </div>
-                </div>
-
-                <!-- v3.x -->
-                <div class="relative flex">
-                    <div class="hidden md:block md:w-1/2 md:pr-14 md:text-right pt-1">
-                        <span class="inline-block px-2.5 py-1 text-[0.65rem] font-mono bg-solar/10 text-solar rounded-lg border border-solar/20">规划中</span>
-                    </div>
-                    <div class="absolute left-6 md:left-1/2 -translate-x-1/2 z-10 mt-1">
-                        <div class="w-3 h-3 rounded-full border-2 border-ink-500 bg-ink-900 border-dashed"></div>
-                    </div>
-                    <div class="pl-16 md:pl-14 md:w-1/2 pt-1">
-                        <h4 class="font-display font-semibold text-ink-300 text-lg">v3.x <span class="text-ink-500 font-normal">· 全自动</span></h4>
-                        <p class="text-sm text-ink-400 mt-2 leading-relaxed">通过插件、脚本和机器学习技术，实现全自动化运维，最终达到无人值守目标</p>
-                        <div class="font-mono text-[0.7rem] text-ink-500 mt-2">未来计划</div>
-                        <span class="md:hidden inline-block mt-2 px-2.5 py-1 text-[0.65rem] font-mono bg-solar/10 text-solar rounded-lg border border-solar/20">规划中</span>
-                    </div>
-                </div>
-            </div>
+        <div class="flex gap-12 text-sm text-brand-muted">
+            <a href="https://github.com/kingToolbox/WindTerm/discussions" target="_blank" class="hover:text-white transition-colors">社区讨论</a>
+            <a href="https://kingtoolbox.github.io" target="_blank" class="hover:text-white transition-colors">使用文档</a>
+            <a href="https://github.com/kingToolbox/WindTerm/issues" target="_blank" class="hover:text-white transition-colors">反馈建议</a>
         </div>
-    </section>
-
-    <!-- ===== COMMUNITY ===== -->
-    <section id="community" class="relative py-28 sm:py-36">
-        <div class="divider"></div>
-
-        <div class="max-w-6xl mx-auto px-5 sm:px-8 pt-20">
-            <div class="grid lg:grid-cols-5 gap-10 lg:gap-14">
-                <!-- Left: Community -->
-                <div class="lg:col-span-3 reveal">
-                    <h3 class="font-display font-bold text-2xl text-ink-50 mb-8 flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-sky-500/[0.08] border border-sky-500/10 flex items-center justify-center">
-                            <i class="fas fa-users text-sky-400"></i>
-                        </div>
-                        参与社区
-                    </h3>
-                    <div class="space-y-4">
-                        <a href="https://github.com/kingToolbox/WindTerm/issues" target="_blank"
-                           class="card rounded-2xl p-5 flex items-center gap-5 group block">
-                            <div class="w-11 h-11 rounded-xl bg-orange-500/[0.08] border border-orange-500/10 flex items-center justify-center flex-shrink-0 relative z-10">
-                                <i class="fas fa-bug text-orange-400"></i>
-                            </div>
-                            <div class="flex-1 relative z-10">
-                                <div class="font-display font-semibold text-ink-50 group-hover:text-cyan-glow transition-colors">问题反馈</div>
-                                <div class="text-sm text-ink-300 mt-0.5">提交 Bug 报告或功能请求，帮助 WindTerm 变得更好</div>
-                            </div>
-                            <i class="fas fa-arrow-right text-ink-500 group-hover:text-cyan-glow group-hover:translate-x-1 transition-all relative z-10"></i>
-                        </a>
-                        <a href="https://github.com/kingToolbox/WindTerm/discussions" target="_blank"
-                           class="card rounded-2xl p-5 flex items-center gap-5 group block">
-                            <div class="w-11 h-11 rounded-xl bg-purple-500/[0.08] border border-purple-500/10 flex items-center justify-center flex-shrink-0 relative z-10">
-                                <i class="fas fa-comments text-purple-400"></i>
-                            </div>
-                            <div class="flex-1 relative z-10">
-                                <div class="font-display font-semibold text-ink-50 group-hover:text-cyan-glow transition-colors">技术讨论</div>
-                                <div class="text-sm text-ink-300 mt-0.5">与全球开发者讨论 SSH、Shell、运维技巧和使用心得</div>
-                            </div>
-                            <i class="fas fa-arrow-right text-ink-500 group-hover:text-cyan-glow group-hover:translate-x-1 transition-all relative z-10"></i>
-                        </a>
-                        <a href="https://kingtoolbox.github.io" target="_blank"
-                           class="card rounded-2xl p-5 flex items-center gap-5 group block">
-                            <div class="w-11 h-11 rounded-xl bg-emerald-500/[0.08] border border-emerald-500/10 flex items-center justify-center flex-shrink-0 relative z-10">
-                                <i class="fas fa-play-circle text-emerald-400"></i>
-                            </div>
-                            <div class="flex-1 relative z-10">
-                                <div class="font-display font-semibold text-ink-50 group-hover:text-cyan-glow transition-colors">视频教程</div>
-                                <div class="text-sm text-ink-300 mt-0.5">观看功能演示和使用教程，快速上手所有特性</div>
-                            </div>
-                            <i class="fas fa-arrow-right text-ink-500 group-hover:text-cyan-glow group-hover:translate-x-1 transition-all relative z-10"></i>
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Right: Acknowledgements -->
-                <div class="lg:col-span-2 reveal reveal-delay-2">
-                    <h3 class="font-display font-bold text-2xl text-ink-50 mb-8 flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-solar/[0.08] border border-solar/10 flex items-center justify-center">
-                            <i class="fas fa-heart text-solar"></i>
-                        </div>
-                        致谢贡献者
-                    </h3>
-                    <div class="card rounded-2xl p-6">
-                        <p class="text-sm text-ink-300 mb-6 relative z-10">感谢以下贡献者为 WindTerm 的国际化做出的努力</p>
-                        <div class="space-y-4 relative z-10">
-                            <div class="flex items-center gap-4">
-                                <div class="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500/20 to-red-500/20 border border-ink-500/30 flex items-center justify-center text-[0.65rem] font-mono text-ink-200 font-bold flex-shrink-0">FR</div>
-                                <div class="flex-1">
-                                    <div class="text-sm text-ink-100">
-                                        <a href="https://github.com/EvoWebFrance" target="_blank" class="hover:text-cyan-glow transition-colors">EvoWebFrance</a>
-                                        <span class="text-ink-500 mx-1">·</span>
-                                        <a href="https://github.com/LuxNegra" target="_blank" class="hover:text-cyan-glow transition-colors">LuxNegra</a>
-                                    </div>
-                                    <div class="text-[0.7rem] text-ink-400">法语翻译</div>
-                                </div>
-                            </div>
-                            <div class="h-px bg-ink-600/20"></div>
-                            <div class="flex items-center gap-4">
-                                <div class="w-9 h-9 rounded-full bg-gradient-to-br from-yellow-500/20 to-red-500/20 border border-ink-500/30 flex items-center justify-center text-[0.65rem] font-mono text-ink-200 font-bold flex-shrink-0">DE</div>
-                                <div class="flex-1">
-                                    <a href="https://github.com/kvnklk" target="_blank" class="text-sm text-ink-100 hover:text-cyan-glow transition-colors">kvnklk</a>
-                                    <div class="text-[0.7rem] text-ink-400">德语翻译</div>
-                                </div>
-                            </div>
-                            <div class="h-px bg-ink-600/20"></div>
-                            <div class="flex items-center gap-4">
-                                <div class="w-9 h-9 rounded-full bg-gradient-to-br from-red-500/20 to-yellow-500/20 border border-ink-500/30 flex items-center justify-center text-[0.65rem] font-mono text-ink-200 font-bold flex-shrink-0">CN</div>
-                                <div class="flex-1">
-                                    <div class="text-sm text-ink-100">
-                                        <a href="https://github.com/Lemonawa" target="_blank" class="hover:text-cyan-glow transition-colors">Lemonawa</a>
-                                        <span class="text-ink-500 mx-1">·</span>
-                                        <a href="https://github.com/MosamXu" target="_blank" class="hover:text-cyan-glow transition-colors">MosamXu</a>
-                                    </div>
-                                    <div class="text-[0.7rem] text-ink-400">简体中文翻译</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div class="text-xs text-brand-muted font-mono">
+            © 2020 – 2026 kingToolbox. Apache-2.0 License.
         </div>
-    </section>
+    </div>
+</footer>
 
-    <!-- ===== FOOTER ===== -->
-    <footer class="border-t border-ink-600/30 py-14">
-        <div class="max-w-7xl mx-auto px-5 sm:px-8">
-            <div class="flex flex-col md:flex-row items-center justify-between gap-8">
-                <!-- Logo -->
-                <div class="flex items-center gap-3">
-                    <div class="w-7 h-7 rounded-lg bg-cyan-glow/10 border border-cyan-glow/20 flex items-center justify-center">
-                        <span class="font-mono text-cyan-glow text-xs font-bold">W</span>
-                    </div>
-                    <span class="font-display font-bold text-sm text-ink-200">WindTerm</span>
-                    <span class="text-ink-500 text-[0.7rem] font-mono">· 完全免费 · Apache-2.0</span>
-                </div>
-                <!-- Social -->
-                <div class="flex items-center gap-5">
-                    <a href="https://github.com/kingToolbox/WindTerm" target="_blank" class="w-9 h-9 rounded-xl bg-ink-700/30 border border-ink-600/30 flex items-center justify-center text-ink-300 hover:text-cyan-glow hover:border-cyan-glow/20 transition-all">
-                        <i class="fab fa-github"></i>
-                    </a>
-                    <a href="https://kingtoolbox.github.io" target="_blank" class="w-9 h-9 rounded-xl bg-ink-700/30 border border-ink-600/30 flex items-center justify-center text-ink-300 hover:text-cyan-glow hover:border-cyan-glow/20 transition-all">
-                        <i class="fas fa-globe"></i>
-                    </a>
-                    <a href="https://github.com/kingToolbox/WindTerm/discussions" target="_blank" class="w-9 h-9 rounded-xl bg-ink-700/30 border border-ink-600/30 flex items-center justify-center text-ink-300 hover:text-cyan-glow hover:border-cyan-glow/20 transition-all">
-                        <i class="fas fa-comments"></i>
-                    </a>
-                </div>
-                <!-- Copyright -->
-                <div class="text-[0.7rem] text-ink-500 font-mono">© 2020 – 2026 kingToolbox</div>
-            </div>
-        </div>
-    </footer>
-
-    <!-- Back to top -->
-    <button id="backToTop" class="fixed bottom-6 right-6 z-50 w-11 h-11 rounded-2xl glass border-ink-500/30 flex items-center justify-center text-ink-300 hover:text-cyan-glow hover:border-cyan-glow/30 transition-all hover:box-glow" aria-label="回到顶部">
-        <i class="fas fa-arrow-up text-sm"></i>
-    </button>
-
-    <script>
-        // ---- SCROLL REVEAL ----
-        const revealObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('is-visible');
-                    // Animate perf bars
-                    entry.target.querySelectorAll('.perf-fill').forEach(bar => {
-                        setTimeout(() => bar.classList.add('animate'), 200);
-                    });
-                }
-            });
-        }, { threshold: 0.08, rootMargin: '0px 0px -60px 0px' });
-
-        document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
-
-        // ---- READING PROGRESS ----
-        const progressBar = document.getElementById('reading-progress');
-        function updateProgress() {
-            const scrollTop = window.scrollY;
-            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-            const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
-            progressBar.style.width = progress + '%';
-        }
-
-        // ---- BACK TO TOP ----
-        const backToTop = document.getElementById('backToTop');
-        function updateBackToTop() {
-            if (window.scrollY > 600) {
-                backToTop.classList.add('show');
-            } else {
-                backToTop.classList.remove('show');
-            }
-        }
-        backToTop.addEventListener('click', () => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-
-        // ---- NAV ACTIVE STATE ----
-        const sections = document.querySelectorAll('section[id]');
-        const navLinks = document.querySelectorAll('nav .toc-link');
-        function updateActiveNav() {
-            const scrollY = window.scrollY + 120;
-            let currentId = '';
-            sections.forEach(section => {
-                if (scrollY >= section.offsetTop) {
-                    currentId = section.getAttribute('id');
-                }
-            });
-            navLinks.forEach(link => {
-                const href = link.getAttribute('href');
-                if (href === '#' + currentId) {
-                    link.classList.add('active');
-                } else {
-                    link.classList.remove('active');
-                }
-            });
-        }
-
-        // Throttled scroll handler
-        let ticking = false;
-        window.addEventListener('scroll', () => {
-            if (!ticking) {
-                requestAnimationFrame(() => {
-                    updateProgress();
-                    updateBackToTop();
-                    updateActiveNav();
-                    ticking = false;
-                });
-                ticking = true;
+<script>
+    // Intersection Observer for animations
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('active');
             }
         });
+    }, { threshold: 0.1 });
 
-        // ---- MOBILE MENU ----
-        const mobileToggle = document.getElementById('mobileToggle');
-        const mobileMenu = document.getElementById('mobileMenu');
-        const menuIcon = document.getElementById('menuIcon');
-        let menuOpen = false;
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
-        mobileToggle.addEventListener('click', () => {
-            menuOpen = !menuOpen;
-            mobileMenu.classList.toggle('hidden');
-            menuIcon.className = menuOpen ? 'fas fa-times text-lg' : 'fas fa-bars text-lg';
-        });
-        mobileMenu.querySelectorAll('a').forEach(link => {
-            link.addEventListener('click', () => {
-                mobileMenu.classList.add('hidden');
-                menuOpen = false;
-                menuIcon.className = 'fas fa-bars text-lg';
-            });
-        });
-
-        // ---- HERO PARTICLES ----
-        const particleContainer = document.getElementById('heroParticles');
-        for (let i = 0; i < 30; i++) {
-            const p = document.createElement('div');
-            p.style.cssText = `
-                position: absolute;
-                width: ${1 + Math.random() * 2}px;
-                height: ${1 + Math.random() * 2}px;
-                background: ${Math.random() > 0.5 ? '#5eead4' : '#34d399'};
-                border-radius: 50%;
-                left: ${Math.random() * 100}%;
-                top: ${30 + Math.random() * 60}%;
-                opacity: 0;
-                animation: particle-rise ${3 + Math.random() * 4}s ease-in-out ${Math.random() * 5}s infinite;
-            `;
-            particleContainer.appendChild(p);
+    // Navbar scroll effect
+    window.addEventListener('scroll', () => {
+        const nav = document.querySelector('nav div');
+        if (window.scrollY > 50) {
+            nav.classList.add('shadow-2xl');
+        } else {
+            nav.classList.remove('shadow-2xl');
         }
+    });
+</script>
 
-        // ---- INITIAL CALL ----
-        updateProgress();
-    </script>
 </body>
 </html>
